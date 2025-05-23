@@ -5,7 +5,6 @@
   "main": "src/main.js",
   "scripts": {
     "dev": "vite",
-    "serve": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -19,12 +18,12 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "sweetalert2": "^11.21.2",
-    "vue": "^3.5.14",
+    "vue": "^3.x.x",
     "vue-router": "^4.5.1",
     "vuex": "^4.1.0",
     "xlsx": "^0.18.5",
-    "vite": "^4.0.4",
-    "@vitejs/plugin-vue": "^4.6.2",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-vue": "^5.0.0",
     "@vue/compiler-sfc": "^3.x.x"
   },
   "devDependencies": {
