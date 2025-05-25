@@ -5,6 +5,19 @@
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <h2 class="mb-0">รายการรายรับ</h2>
         <div class="d-flex align-items-center gap-3">
+          <!-- เพิ่มปุ่มลบรายการที่เลือกและปุ่มโหมดเลือก -->
+          <button class="btn btn-danger btn-sm" 
+                  v-if="isSelectMode && selectedTransactions.length > 0"
+                  @click="deleteSelectedTransactions">
+            <i class="fa-solid fa-trash me-1"></i>
+            ลบที่เลือก ({{ selectedTransactions.length }})
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" @click="toggleSelectMode">
+            <i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-check-square'"></i>
+            {{ isSelectMode ? 'ยกเลิก' : 'เลือกหลายรายการ' }}
+          </button>
+
+          <!-- ปุ่มที่มีอยู่เดิม -->
           <div class="filter-section d-flex align-items-center gap-2">
             <label class="text-nowrap">แสดง:</label>
             <select v-model="itemsPerPage" class="form-select form-select-sm">
@@ -13,7 +26,7 @@
               <option value="100">100 รายการ</option>
             </select>
           </div>
-          <button class="btn btn-primary btn-sm" @click="showAddForm = !showAddForm">
+          <button class="btn btn-primary btn-sm" v-if="!isSelectMode" @click="showAddForm = !showAddForm">
             <i class="bi" :class="showAddForm ? 'bi-x-lg' : 'bi-plus-lg'"></i>
             {{ showAddForm ? 'ปิด' : 'เพิ่มรายการ' }}
           </button>
@@ -102,7 +115,15 @@
                 <tbody>
                   <tr v-for="entry in sortedData" 
                       :key="entry.id"
-                      class="transaction-row">
+                      :class="['transaction-row', { 'selected': isTransactionSelected(entry.id) }]"
+                      @click="handleRowClick(entry)">
+                    <!-- เพิ่ม checkbox column ถ้าอยู่ในโหมดเลือก -->
+                    <td v-if="isSelectMode" class="checkbox-column" @click.stop>
+                      <input type="checkbox" 
+                             class="form-check-input"
+                             :checked="isTransactionSelected(entry.id)"
+                             @click="toggleTransactionSelection(entry.id)">
+                    </td>
                     <td>{{ formatDate(entry.date) }}</td>
                     <td>{{ entry.description }}</td>
                     <td>
@@ -111,7 +132,7 @@
                       </span>
                     </td>
                     <td class="text-success text-end">{{ formatAmount(entry.amount) }} ฿</td>
-                    <td class="text-end">
+                    <td class="text-end" v-if="!isSelectMode">
                       <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-secondary btn-sm" @click="editTransaction(entry)">
                           <i class="bi bi-pencil"></i>
@@ -397,6 +418,61 @@ export default {
       })
     })
 
+    // เพิ่ม imports และ state สำหรับการเลือกหลายรายการ
+    const isSelectMode = ref(false)
+    const selectedTransactions = ref([])
+
+    // เพิ่มฟังก์ชันสำหรับจัดการการเลือกรายการ
+    const toggleSelectMode = () => {
+      isSelectMode.value = !isSelectMode.value
+      if (!isSelectMode.value) {
+        selectedTransactions.value = []
+      }
+    }
+
+    const isTransactionSelected = (id) => {
+      return selectedTransactions.value.includes(id)
+    }
+
+    const toggleTransactionSelection = (id) => {
+      const index = selectedTransactions.value.indexOf(id)
+      if (index === -1) {
+        selectedTransactions.value.push(id)
+      } else {
+        selectedTransactions.value.splice(index, 1)
+      }
+    }
+
+    const handleRowClick = (entry) => {
+      if (isSelectMode.value) {
+        toggleTransactionSelection(entry.id)
+      }
+    }
+
+    // เพิ่มฟังก์ชันสำหรับลบรายการที่เลือก
+    const deleteSelectedTransactions = async () => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: `ต้องการลบรายการที่เลือกทั้งหมด ${selectedTransactions.value.length} รายการหรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        for (const id of selectedTransactions.value) {
+          await store.dispatch('deleteTransaction', {
+            type: 'income',
+            id: id
+          })
+        }
+        selectedTransactions.value = []
+        isSelectMode.value = false
+      }
+    }
+
     return {
       currentPage,
       itemsPerPage,
@@ -425,7 +501,14 @@ export default {
       handleDateSelected,
       sort,
       getSortIcon,
-      sortedData
+      sortedData,
+      isSelectMode,
+      selectedTransactions,
+      toggleSelectMode,
+      isTransactionSelected,
+      toggleTransactionSelection,
+      handleRowClick,
+      deleteSelectedTransactions
     }
   }
 }
@@ -625,5 +708,36 @@ export default {
   .category-badge {
     padding: 0.25rem 0.5rem;
   }
+}
+
+/* เพิ่ม styles สำหรับการเลือกรายการ */
+.transaction-row {
+  cursor: pointer;
+}
+
+.transaction-row.selected {
+  background-color: #e3f2fd;
+}
+
+.checkbox-column {
+  width: 40px;
+  text-align: center;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+/* ปรับแต่ง transition */
+.transaction-row {
+  transition: background-color 0.2s ease;
+}
+
+.transaction-row:hover {
+  background-color: #f8f9fa;
+}
+
+.transaction-row.selected:hover {
+  background-color: #d0e7f7;
 }
 </style>
