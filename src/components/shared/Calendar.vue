@@ -38,26 +38,27 @@
       </div>
     </div>
 
-    <!-- Calendar Grid -->
-    <div class="calendar-grid">
-      <!-- Weekday Headers -->
-      <div v-for="day in weekDays" :key="day" class="weekday">
-        {{ day }}
+    <!-- Calendar Body -->
+    <div class="calendar-body">
+      <div class="weekdays">
+        <div v-for="day in weekDays" :key="day">{{ day }}</div>
       </div>
-
-      <!-- Calendar Days -->
-      <div v-for="(day, index) in calendar" 
-           :key="index"
-           :class="['calendar-day', {
-             'other-month': !day.currentMonth,
-             'selected': isSelectedDate(day.date),
-             'today': isToday(day.date)
-           }]"
-           @click="selectDate(day.date)">
-        <span class="day-number">{{ day.date ? day.date.getDate() : '' }}</span>
-        <div v-if="day.date && hasTransactions(day.date)" class="transaction-indicators">
-          <span v-if="getIncomeForDate(day.date)" class="indicator income"></span>
-          <span v-if="getExpensesForDate(day.date)" class="indicator expense"></span>
+      <div class="days">
+        <div v-for="day in calendar" 
+             :key="day.date" 
+             class="day"
+             :class="{
+               'selected': isSelectedDate(day.date),
+               'has-transactions': hasTransactions(day.date),
+               'outside-month': !day.currentMonth,
+               'today': isToday(day.date)
+             }"
+             @click="selectDate(day.date)">
+          <span class="date">{{ new Date(day.date).getDate() }}</span>
+          <div v-if="hasTransactions(day.date)" class="transaction-indicators">
+            <div v-if="getIncomeForDate(day.date)" class="income-indicator"></div>
+            <div v-if="getExpensesForDate(day.date)" class="expense-indicator"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -77,7 +78,7 @@ export default {
       default: () => new Date()
     }
   },
-  emits: ['update:selectedDate'],
+  emits: ['update:selectedDate', 'dateSelected'],
   
   setup(props, { emit }) {
     const store = useStore()
@@ -160,16 +161,26 @@ export default {
       return weeks.flat() // Flatten the array of weeks
     })
 
+    const selectDate = (date) => {
+      if (!date) return
+      const selectedDate = new Date(date)
+      // ปรับเวลาให้เป็น 00:00:00
+      selectedDate.setHours(0, 0, 0, 0)
+      emit('update:selectedDate', selectedDate)
+      emit('dateSelected', selectedDate)
+    }
+
+    // ปรับปรุงฟังก์ชัน isSelectedDate
     const isSelectedDate = (date) => {
       if (!date || !props.selectedDate) return false
-      return date.toDateString() === props.selectedDate.toDateString()
+      const d1 = new Date(date)
+      const d2 = new Date(props.selectedDate)
+      // เปรียบเทียบเฉพาะวันที่
+      return d1.getDate() === d2.getDate() && 
+             d1.getMonth() === d2.getMonth() && 
+             d1.getFullYear() === d2.getFullYear()
     }
-    
-    const hasTransactions = (date) => {
-      if (!date) return false
-      return getIncomeForDate(date) || getExpensesForDate(date)
-    }
-    
+
     const getIncomeForDate = (date) => {
       if (!date) return false
       return store.state.income.some(income => {
@@ -186,9 +197,9 @@ export default {
       })
     }
 
-    const selectDate = (date) => {
-      if (!date) return
-      emit('update:selectedDate', date)
+    const hasTransactions = (date) => {
+      if (!date) return false
+      return getIncomeForDate(date) || getExpensesForDate(date)
     }
 
     // เพิ่ม watcher สำหรับ props.selectedDate
@@ -256,11 +267,11 @@ export default {
       selectedMonth: computed(() => currentDate.value.getMonth()),
       selectedYear: computed(() => currentDate.value.getFullYear()),
       currentMonthYear,
+      selectDate,
       isSelectedDate,
       hasTransactions,
       getIncomeForDate,
       getExpensesForDate,
-      selectDate,
       previousMonth,
       nextMonth,
       showDropdown,
@@ -321,21 +332,27 @@ export default {
   color: white;
 }
 
-.calendar-grid {
+.calendar-body {
+  margin-top: 1rem;
+}
+
+.weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0.5rem;
-}
-
-.weekday {
-  text-align: center;
   font-weight: 500;
   color: var(--text-light);
   padding: 0.5rem 0;
   font-size: 0.875rem;
 }
 
-.calendar-day {
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.day {
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -350,18 +367,18 @@ export default {
   padding: 0.25rem;
 }
 
-.calendar-day:hover {
+.day:hover {
   background: var(--primary-light);
 }
 
-.day-number {
+.date {
   font-size: 0.875rem;
   font-weight: 500;
   position: relative;
   z-index: 1;
 }
 
-.other-month {
+.outside-month {
   color: var(--text-light);
   opacity: 0.5;
 }
@@ -383,17 +400,17 @@ export default {
   bottom: 0.25rem;
 }
 
-.indicator {
+.income-indicator, .expense-indicator {
   width: 4px;
   height: 4px;
   border-radius: 50%;
 }
 
-.indicator.income {
+.income-indicator {
   background: var(--success-color);
 }
 
-.indicator.expense {
+.expense-indicator {
   background: var(--danger-color);
 }
 

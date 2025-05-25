@@ -60,7 +60,10 @@
       <div class="col-12 col-lg-4 order-1 order-lg-2">
         <div class="card h-100">
           <div class="card-body">
-            <transaction-form @transaction-added="handleTransaction" />
+            <transaction-form 
+              :selected-date="selectedDate"
+              @transaction-added="handleTransaction" 
+            />
           </div>
         </div>
       </div>

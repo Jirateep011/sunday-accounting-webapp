@@ -4,7 +4,7 @@
     <div class="section-header">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <h2 class="mb-0">รายการรายจ่าย</h2>
-        <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
           <div class="filter-section d-flex align-items-center gap-2">
             <label class="text-nowrap">แสดง:</label>
             <select v-model="itemsPerPage" class="form-select form-select-sm">
@@ -26,8 +26,10 @@
       <div class="card">
         <div class="card-body">
           <transaction-form 
-            type="expense"
-            @transaction-added="handleTransactionAdded" 
+            :selected-date="selectedDate"
+            :editing-transaction="editingTransaction"
+            @transaction-added="handleTransactionAdded"
+            @cancel="closeForm"
           />
         </div>
       </div>
@@ -38,7 +40,10 @@
       <!-- Calendar Column -->
       <div class="col-12 col-lg-4 order-2 order-lg-1">
         <div class="calendar-wrapper">
-          <Calendar v-model:selectedDate="selectedDate" />
+          <Calendar 
+            v-model:selectedDate="selectedDate" 
+            @dateSelected="handleDateSelected"
+          />
           
           <!-- Summary Card -->
           <div class="summary-card mt-4">
@@ -75,6 +80,7 @@
                     <th>รายละเอียด</th>
                     <th>หมวดหมู่</th>
                     <th class="text-end">จำนวน</th>
+                    <th class="text-end">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -89,9 +95,19 @@
                       </span>
                     </td>
                     <td class="text-danger text-end">{{ formatAmount(entry.amount) }} ฿</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary btn-sm" @click="editTransaction(entry)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" @click="deleteTransaction(entry)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                   <tr v-if="filteredAndPaginatedExpenses.length === 0">
-                    <td colspan="4" class="text-center py-4">
+                    <td colspan="5" class="text-center py-4">
                       <div class="empty-state">
                         <i class="bi bi-inbox text-muted"></i>
                         <p>ไม่พบรายการ</p>
@@ -111,24 +127,22 @@
               แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ sortedExpenses.length }} รายการ
             </div>
             <nav v-if="totalPages > 1">
-              <ul class="pagination mb-0">
+              <ul class="pagination pagination-sm mb-0">
                 <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">
+                  <button class="page-link" @click="changePage(currentPage - 1)">
                     <i class="bi bi-chevron-left"></i>
-                  </a>
+                  </button>
                 </li>
                 <li v-for="page in displayedPages" 
                     :key="page" 
                     class="page-item"
                     :class="{ active: currentPage === page }">
-                  <a class="page-link" href="#" @click.prevent="changePage(page)">
-                    {{ page }}
-                  </a>
+                  <button class="page-link" @click="changePage(page)">{{ page }}</button>
                 </li>
                 <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                  <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">
+                  <button class="page-link" @click="changePage(currentPage + 1)">
                     <i class="bi bi-chevron-right"></i>
-                  </a>
+                  </button>
                 </li>
               </ul>
             </nav>
@@ -140,15 +154,16 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import Calendar from './shared/Calendar.vue'
-import TransactionForm from './shared/TransactionForm.vue' // เพิ่ม import
+import TransactionForm from './shared/TransactionForm.vue'
+import Swal from 'sweetalert2'
 
 export default {
   components: {
     Calendar,
-    TransactionForm // เพิ่ม component
+    TransactionForm
   },
   setup() {
     const store = useStore()
@@ -156,14 +171,36 @@ export default {
     const itemsPerPage = ref(10)
     const selectedDate = ref(new Date())
     const showAddForm = ref(false)
+    const editingTransaction = ref(null)
 
     const sortedExpenses = computed(() => {
-      return [...store.state.expenses].sort((a, b) => 
+      return [...store.state.expenses].sort((a, b) =>
         new Date(b.date) - new Date(a.date)
       )
     })
 
-    // เพิ่ม computed properties สำหรับยอดรวม
+    const filteredExpenses = computed(() => {
+      if (!selectedDate.value) return store.state.expenses
+      
+      return store.state.expenses.filter(entry => {
+        const entryDate = new Date(entry.date)
+        const selected = new Date(selectedDate.value)
+        return entryDate.getDate() === selected.getDate() && 
+               entryDate.getMonth() === selected.getMonth() && 
+               entryDate.getFullYear() === selected.getFullYear()
+      })
+    })
+
+    const filteredAndPaginatedExpenses = computed(() => {
+      return sortedExpenses.value
+        .filter(entry => {
+          if (!selectedDate.value) return true
+          const entryDate = new Date(entry.date)
+          return entryDate.toDateString() === selectedDate.value.toDateString()
+        })
+        .slice(startIndex.value, endIndex.value)
+    })
+
     const selectedDateTotal = computed(() => {
       return filteredExpenses.value
         .reduce((total, entry) => total + Number(entry.amount), 0)
@@ -180,7 +217,6 @@ export default {
         .reduce((total, entry) => total + Number(entry.amount), 0)
     })
 
-    // เพิ่มฟังก์ชันสำหรับดึงชื่อ pocket
     const getPocketName = (pocketId) => {
       const pocket = store.state.expensePockets.find(p => p.id === pocketId)
       return pocket?.name || 'ไม่ระบุหมวดหมู่'
@@ -196,10 +232,6 @@ export default {
 
     const endIndex = computed(() => {
       return Math.min(startIndex.value + itemsPerPage.value, sortedExpenses.value.length)
-    })
-
-    const paginatedExpenses = computed(() => {
-      return sortedExpenses.value.slice(startIndex.value, endIndex.value)
     })
 
     const displayedPages = computed(() => {
@@ -224,39 +256,70 @@ export default {
     }
 
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('th-TH')
+      return new Date(dateString).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
     }
 
     const formatAmount = (amount) => {
       return Number(amount).toLocaleString('th-TH')
     }
 
-    const filteredExpenses = computed(() => {
-      return store.state.expenses.filter(expense => {
-        if (!selectedDate.value) return true
-        const expenseDate = new Date(expense.date)
-        return expenseDate.toDateString() === selectedDate.value.toDateString()
-      })
-    })
+    const handleTransactionAdded = () => {
+      showAddForm.value = false
+      editingTransaction.value = null
+    }
 
-    const filteredAndPaginatedExpenses = computed(() => {
-      return store.state.expenses
-        .filter(expense => {
-          if (!selectedDate.value) return true
-          const expenseDate = new Date(expense.date)
-          return expenseDate.toDateString() === selectedDate.value.toDateString()
+    const editTransaction = (transaction) => {
+      editingTransaction.value = transaction
+      showAddForm.value = true
+    }
+
+    const closeForm = () => {
+      showAddForm.value = false
+      editingTransaction.value = null
+    }
+
+    const deleteTransaction = async (transaction) => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        store.dispatch('deleteTransaction', {
+          type: 'expenses',
+          id: transaction.id
         })
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(startIndex.value, endIndex.value)
+      }
+    }
+
+    const handleDateSelected = (date) => {
+      const newDate = new Date(date)
+      newDate.setHours(0, 0, 0, 0)
+      selectedDate.value = newDate
+      
+      nextTick(() => {
+        setTimeout(() => {
+          showAddForm.value = true
+        }, 100)
+      })
+    }
+
+    watch(selectedDate, () => {
+      currentPage.value = 1
     })
 
     watch(itemsPerPage, () => {
       currentPage.value = 1
     })
-
-    const handleTransactionAdded = () => {
-      showAddForm.value = false
-    }
 
     return {
       currentPage,
@@ -264,7 +327,6 @@ export default {
       totalPages,
       startIndex,
       endIndex,
-      paginatedExpenses,
       displayedPages,
       changePage,
       formatDate,
@@ -275,10 +337,15 @@ export default {
       filteredAndPaginatedExpenses,
       showAddForm,
       handleTransactionAdded,
-      selectedDateTotal, // เพิ่ม return properties
+      selectedDateTotal,
       currentMonthTotal,
       getPocketName,
-      totalExpenses: computed(() => store.getters.totalExpenses)
+      totalExpenses: computed(() => store.getters.totalExpenses),
+      editingTransaction,
+      editTransaction,
+      deleteTransaction,
+      handleDateSelected,
+      closeForm
     }
   }
 }
@@ -289,7 +356,7 @@ export default {
   background: white;
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   margin-bottom: 2rem;
 }
 
@@ -365,6 +432,11 @@ export default {
 
 .page-item.active .page-link {
   background: var(--primary-color);
+}
+
+.btn-group-sm .btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
 }
 
 .add-form-section {

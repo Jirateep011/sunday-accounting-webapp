@@ -25,7 +25,12 @@
     <div v-if="showAddForm" class="add-form-section my-4">
       <div class="card">
         <div class="card-body">
-          <transaction-form @transaction-added="handleTransactionAdded" />
+          <transaction-form 
+            :selected-date="selectedDate"
+            :editing-transaction="editingTransaction"
+            @transaction-added="handleTransactionAdded"
+            @cancel="closeForm"
+          />
         </div>
       </div>
     </div>
@@ -35,7 +40,10 @@
       <!-- Calendar Column -->
       <div class="col-12 col-lg-4 order-2 order-lg-1">
         <div class="calendar-wrapper">
-          <Calendar v-model:selectedDate="selectedDate" />
+          <Calendar 
+            v-model:selectedDate="selectedDate" 
+            @dateSelected="handleDateSelected"
+          />
           
           <!-- Summary Card -->
           <div class="summary-card mt-4">
@@ -72,6 +80,7 @@
                     <th>รายละเอียด</th>
                     <th>หมวดหมู่</th>
                     <th class="text-end">จำนวน</th>
+                    <th class="text-end">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -86,9 +95,19 @@
                       </span>
                     </td>
                     <td class="text-success text-end">{{ formatAmount(entry.amount) }} ฿</td>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary btn-sm" @click="editTransaction(entry)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" @click="deleteTransaction(entry)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                   <tr v-if="filteredAndPaginatedEntries.length === 0">
-                    <td colspan="4" class="text-center py-4">
+                    <td colspan="5" class="text-center py-4">
                       <div class="empty-state">
                         <i class="bi bi-inbox text-muted"></i>
                         <p>ไม่พบรายการ</p>
@@ -137,10 +156,11 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import Calendar from './shared/Calendar.vue'
 import TransactionForm from './shared/TransactionForm.vue'
+import Swal from 'sweetalert2'
 
 export default {
   components: {
@@ -153,6 +173,7 @@ export default {
     const itemsPerPage = ref(10)
     const selectedDate = ref(new Date())
     const showAddForm = ref(false)
+    const editingTransaction = ref(null)
 
     const sortedIncomeEntries = computed(() => {
       return [...store.state.income].sort((a, b) => 
@@ -198,14 +219,38 @@ export default {
     }
 
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('th-TH')
+      return new Date(dateString).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
     }
 
+    const handleDateSelected = (date) => {
+      // ปรับเวลาให้เป็น 00:00:00
+      const newDate = new Date(date)
+      newDate.setHours(0, 0, 0, 0)
+      selectedDate.value = newDate
+      
+      // ใช้ nextTick และ timeout เพื่อให้แน่ใจว่า UI อัพเดตเสร็จแล้ว
+      nextTick(() => {
+        setTimeout(() => {
+          showAddForm.value = true
+        }, 100)
+      })
+    }
+
+    // แก้ไข filteredEntries computed
     const filteredEntries = computed(() => {
+      if (!selectedDate.value) return store.state.income
+      
       return store.state.income.filter(entry => {
-        if (!selectedDate.value) return true
         const entryDate = new Date(entry.date)
-        return entryDate.toDateString() === selectedDate.value.toDateString()
+        const selected = new Date(selectedDate.value)
+        // เปรียบเทียบเฉพาะวันที่
+        return entryDate.getDate() === selected.getDate() && 
+               entryDate.getMonth() === selected.getMonth() && 
+               entryDate.getFullYear() === selected.getFullYear()
       })
     })
 
@@ -258,6 +303,36 @@ export default {
 
     const handleTransactionAdded = () => {
       showAddForm.value = false
+      editingTransaction.value = null
+    }
+
+    const editTransaction = (transaction) => {
+      editingTransaction.value = transaction
+      showAddForm.value = true
+    }
+
+    const closeForm = () => {
+      showAddForm.value = false
+      editingTransaction.value = null
+    }
+
+    const deleteTransaction = async (transaction) => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        store.dispatch('deleteTransaction', {
+          type: 'income',
+          id: transaction.id
+        })
+      }
     }
 
     return {
@@ -280,7 +355,12 @@ export default {
       currentMonthTotal,
       getPocketName,
       formatAmount,
-      handleTransactionAdded
+      handleTransactionAdded,
+      editTransaction,
+      closeForm,
+      editingTransaction,
+      deleteTransaction,
+      handleDateSelected
     }
   }
 }
@@ -364,6 +444,11 @@ export default {
 
 .page-item.active .page-link {
   background: var(--primary-color);
+}
+
+.btn-group-sm .btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 768px) {

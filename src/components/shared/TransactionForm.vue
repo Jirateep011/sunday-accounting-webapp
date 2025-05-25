@@ -1,9 +1,24 @@
 <template>
   <div class="transaction-form">
-    <h2 class="text-center">เพิ่มรายการ</h2>
+    <h2 class="text-center">{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการ' }}</h2>
     <form @submit.prevent="submitTransaction">
+      <!-- เพิ่มส่วนเลือกวันที่ -->
       <div class="mb-3">
-        <label for="transactionType" class="form-label">ประเภทของรายการ</label>
+        <label class="form-label">วันที่</label>
+        <input
+          type="date"
+          v-model="transactionDate"
+          class="form-control"
+          :max="maxDate"
+          required
+        />
+        <div class="form-text">
+          วันที่ที่เลือก: {{ formatDisplayDate(transactionDate) }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">ประเภทของรายการ</label>
         <select v-model="transactionType" class="form-select" required>
           <option value="" disabled>เลือกประเภท</option>
           <option value="income">รายรับ</option>
@@ -39,35 +54,76 @@
         <input type="text" v-model="description" class="form-control" required />
       </div>
 
-      <button type="submit" class="btn btn-primary" :disabled="!isFormValid">
-        {{ isFormValid ? 'ยืนยัน' : 'กรุณากรอกข้อมูลให้ครบ' }}
-      </button>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1" :disabled="!isFormValid">
+          {{ isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ' }}
+        </button>
+        <button v-if="isEditing" type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
+          ยกเลิก
+        </button>
+      </div>
     </form>
   </div>
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Swal from 'sweetalert2'
 import { useStore } from 'vuex'
 
 export default {
   props: {
-    selectedPocket: {
+    selectedDate: {
+      type: Date,
+      required: true
+    },
+    editingTransaction: {
       type: Object,
       default: null
     }
   },
   setup(props) {
     const store = useStore()
-    const transactionType = ref('')
-    const selectedPocketId = ref('')
-    const amount = ref(null)
-    const description = ref('')
 
-    // ตัวอย่างข้อมูลหมวดหมู่ (ควรย้ายไปเก็บใน Vuex store)
-    const incomePockets = computed(() => store.getters.getIncomePockets)
-    const expensePockets = computed(() => store.getters.getExpensePockets)
+    // ย้ายฟังก์ชันมาไว้ด้านบนก่อนการใช้งาน
+    const formatDateForInput = (date) => {
+      const d = new Date(date)
+      d.setHours(0, 0, 0, 0)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    // ฟังก์ชันสำหรับแสดงผลวันที่แบบไทย
+    const formatDisplayDate = (dateString) => {
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      return date.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    }
+
+    const transactionType = ref(props.editingTransaction?.type || '')
+    const selectedPocketId = ref(props.editingTransaction?.pocketId || '')
+    const amount = ref(props.editingTransaction?.amount || null)
+    const description = ref(props.editingTransaction?.description || '')
+    const transactionDate = ref(
+      props.editingTransaction?.date ||
+      formatDateForInput(props.selectedDate) // ใช้ formatDateForInput ที่ประกาศแล้ว
+    )
+
+    const isEditing = computed(() => !!props.editingTransaction)
+    const maxDate = new Date().toISOString().split('T')[0]
+
+    // อัพเดท transactionDate เมื่อ selectedDate เปลี่ยน
+    watch(() => props.selectedDate, (newDate) => {
+      if (newDate) {
+        transactionDate.value = formatDateForInput(newDate)
+      }
+    }, { immediate: true })
 
     const isFormValid = computed(() => {
       return transactionType.value &&
@@ -94,21 +150,24 @@ export default {
     }
 
     const submitTransaction = async () => {
-      if (!isFormValid.value) return
-
       try {
         const transaction = {
+          id: props.editingTransaction?.id || Date.now(),
+          date: transactionDate.value,
           type: transactionType.value,
+          pocketId: selectedPocketId.value,
           amount: Number(amount.value),
-          description: description.value,
-          pocketId: props.selectedPocket?.id || selectedPocketId.value,
-          date: new Date().toISOString()
+          description: description.value
         }
 
-        if (transaction.type === 'income') {
-          store.dispatch('addIncome', transaction)
+        if (isEditing.value) {
+          await store.dispatch('updateTransaction', transaction)
         } else {
-          store.dispatch('addExpense', transaction)
+          if (transaction.type === 'income') {
+            await store.dispatch('addIncome', transaction)
+          } else {
+            await store.dispatch('addExpense', transaction)
+          }
         }
 
         await Swal.fire({
@@ -139,10 +198,14 @@ export default {
       selectedPocketId,
       amount,
       description,
-      incomePockets,
-      expensePockets,
+      transactionDate,
+      incomePockets: computed(() => store.getters.getIncomePockets),
+      expensePockets: computed(() => store.getters.getExpensePockets),
       isFormValid,
-      submitTransaction
+      isEditing,
+      submitTransaction,
+      formatDisplayDate,
+      maxDate
     }
   }
 }

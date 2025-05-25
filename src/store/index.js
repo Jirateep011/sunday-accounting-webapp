@@ -69,6 +69,40 @@ export default createStore({
     addExpensePocket(state, pocket) {
       state.expensePockets.push(pocket)
       saveState(state)
+    },
+    updatePocket(state, { type, pocket }) {
+      const pockets = type === 'income' ? state.incomePockets : state.expensePockets
+      const index = pockets.findIndex(p => p.id === pocket.id)
+      if (index !== -1) {
+        pockets[index] = { ...pocket }
+        saveState(state)
+      }
+    },
+    deleteTransactionsByPocketId(state, { type, pocketId }) {
+      // ลบรายการที่เกี่ยวข้องกับ pocket
+      state[type] = state[type].filter(item => item.pocketId !== pocketId)
+      saveState(state)
+    },
+    deletePocket(state, { type, pocketId }) {
+      const pockets = type === 'income' ? state.incomePockets : state.expensePockets
+      const index = pockets.findIndex(p => p.id === pocketId)
+      if (index !== -1) {
+        pockets.splice(index, 1)
+        saveState(state)
+      }
+    },
+    updateTransaction(state, { type, transaction }) {
+      const transactions = state[type]
+      const index = transactions.findIndex(t => t.id === transaction.id)
+      if (index !== -1) {
+        transactions[index] = transaction
+        saveState(state)
+      }
+    },
+
+    deleteTransaction(state, { type, id }) {
+      state[type] = state[type].filter(t => t.id !== id)
+      saveState(state)
     }
   },
   actions: {
@@ -86,6 +120,14 @@ export default createStore({
     },
     addExpensePocket({ commit }, pocket) {
       commit('addExpensePocket', pocket)
+    },
+    updateTransaction({ commit }, transaction) {
+      const type = transaction.type === 'income' ? 'income' : 'expenses'
+      commit('updateTransaction', { type, transaction })
+    },
+
+    deleteTransaction({ commit }, { type, id }) {
+      commit('deleteTransaction', { type, id })
     }
   },
   getters: {

@@ -2,7 +2,21 @@
   <div class="cloud-pocket container-fluid">
     <!-- Page Header -->
     <div class="section-header mb-4">
-      <h2 class="mb-0">หมวดหมู่รายรับ-รายจ่าย</h2>
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">หมวดหมู่รายรับ-รายจ่าย</h2>
+        <div class="actions">
+          <button class="btn btn-danger btn-sm me-2" 
+                  :disabled="!selectedPockets.length"
+                  @click="deleteSelectedPockets">
+            <i class="bi bi-trash me-1"></i>
+            ลบที่เลือก ({{ selectedPockets.length }})
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" @click="toggleSelectMode">
+            <i class="bi" :class="isSelectMode ? 'bi-x-lg' : 'bi-check-square'"></i>
+            {{ isSelectMode ? 'ยกเลิก' : 'เลือกหลายรายการ' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="row g-4">
@@ -19,10 +33,9 @@
               เพิ่มหมวดหมู่
             </button>
           </div>
-          <div class="pockets-container row g-3">
-            <div v-for="pocket in incomePockets" :key="pocket.id" class="col-12 col-sm-6">
-              <div :class="['pocket-card income', { 'selected': selectedPocket?.id === pocket.id }]"
-                @click="selectPocket(pocket)">
+          <div class="pockets-container">
+            <div v-for="pocket in incomePockets" :key="pocket.id" class="pocket-card income">
+              <div class="pocket-content" @click="selectPocket(pocket)">
                 <div class="pocket-icon">
                   <i :class="pocket.icon"></i>
                 </div>
@@ -33,6 +46,20 @@
                     <span class="ms-1">{{ calculatePocketTotal(pocket.id, 'income').toLocaleString() }} ฿</span>
                   </p>
                 </div>
+              </div>
+              <div class="pocket-actions" v-if="!isSelectMode">
+                <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'income'})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'income'})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div class="pocket-checkbox" v-else>
+                <input type="checkbox" 
+                       class="form-check-input" 
+                       :checked="isPocketSelected(pocket.id)"
+                       @click.stop="togglePocketSelection(pocket.id)">
               </div>
             </div>
           </div>
@@ -52,10 +79,9 @@
               เพิ่มหมวดหมู่
             </button>
           </div>
-          <div class="pockets-container row g-3">
-            <div v-for="pocket in expensePockets" :key="pocket.id" class="col-12 col-sm-6">
-              <div :class="['pocket-card expense', { 'selected': selectedPocket?.id === pocket.id }]"
-                @click="selectPocket(pocket)">
+          <div class="pockets-container">
+            <div v-for="pocket in expensePockets" :key="pocket.id" class="pocket-card expense">
+              <div class="pocket-content" @click="handlePocketClick(pocket)">
                 <div class="pocket-icon">
                   <i :class="pocket.icon"></i>
                 </div>
@@ -67,6 +93,20 @@
                   </p>
                 </div>
               </div>
+              <div class="pocket-actions" v-if="!isSelectMode">
+                <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'expense'})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'expense'})">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div class="pocket-checkbox" v-else>
+                <input type="checkbox" 
+                       class="form-check-input" 
+                       :checked="isPocketSelected(pocket.id)"
+                       @click.stop="togglePocketSelection(pocket.id, 'expense')">
+              </div>
             </div>
           </div>
         </div>
@@ -77,7 +117,7 @@
     <div class="row mt-4" v-if="selectedPocket">
       <div class="col-12">
         <div class="transaction-section">
-          <div class="section-header">
+          <div class="section-header mb-4">
             <div class="d-flex align-items-center gap-2">
               <div class="selected-pocket-icon">
                 <i :class="selectedPocket.icon"></i>
@@ -180,18 +220,55 @@
         </form>
       </div>
     </div>
+
+    <!-- Edit Category Modal -->
+    <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="mb-0">แก้ไขหมวดหมู่</h3>
+          <button type="button" class="btn-close" @click="closeEditModal"></button>
+        </div>
+        <form @submit.prevent="updatePocket">
+          <div class="modal-body">
+            <div class="form-group mb-3">
+              <label class="form-label">ชื่อหมวดหมู่</label>
+              <input v-model="editingPocket.name" type="text" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">เลือกไอคอน</label>
+              <div class="icon-grid">
+                <div v-for="icon in availableIcons" :key="icon.value"
+                  :class="['icon-option', { selected: editingPocket.icon === icon.value }]"
+                  @click="editingPocket.icon = icon.value">
+                  <i :class="icon.value"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" @click="closeEditModal">
+              ยกเลิก
+            </button>
+            <button type="submit" class="btn btn-primary">
+              บันทึก
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, computed } from 'vue'
 import { useStore } from 'vuex'
-import TransactionForm from './shared/TransactionForm.vue'
+import Swal from 'sweetalert2'
+import TransactionForm from './shared/TransactionForm.vue' // เพิ่ม import
 
 export default {
   name: 'CloudPocket',
   components: {
-    TransactionForm
+    TransactionForm // เพิ่ม component registration
   },
   setup() {
     const store = useStore()
@@ -203,8 +280,11 @@ export default {
       icon: 'bi bi-wallet'
     })
     const showAddForm = ref(false)
+    const showEditModal = ref(false) // เพิ่ม ref สำหรับ modal แก้ไข
+    const editingPocket = ref(null) // เพิ่ม ref สำหรับข้อมูลที่กำลังแก้ไข
+    const isSelectMode = ref(false)
+    const selectedPockets = ref([])
 
-    // ใช้ computed properties เพื่อดึงข้อมูลจาก store
     const incomePockets = computed(() => store.getters.getIncomePockets)
     const expensePockets = computed(() => store.getters.getExpensePockets)
 
@@ -310,6 +390,118 @@ export default {
       { value: 'bi bi-joystick' },
     ]
 
+    const toggleSelectMode = () => {
+      isSelectMode.value = !isSelectMode.value
+      if (!isSelectMode.value) {
+        selectedPockets.value = []
+      }
+    }
+
+    const togglePocketSelection = (pocketId, type = 'income') => {
+      const index = selectedPockets.value.findIndex(p => p.id === pocketId)
+      if (index === -1) {
+        selectedPockets.value.push({ id: pocketId, type })
+      } else {
+        selectedPockets.value.splice(index, 1)
+      }
+    }
+
+    const isPocketSelected = (pocketId) => {
+      return selectedPockets.value.some(p => p.id === pocketId)
+    }
+
+    const deleteSelectedPockets = async () => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: `ต้องการลบหมวดหมู่ที่เลือกทั้งหมด ${selectedPockets.value.length} รายการหรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        for (const pocket of selectedPockets.value) {
+          // ลบข้อมูลรายการที่เกี่ยวข้องกับหมวดหมู่นี้
+          if (pocket.type === 'income') {
+            store.commit('deleteTransactionsByPocketId', {
+              type: 'income',
+              pocketId: pocket.id
+            })
+          } else {
+            store.commit('deleteTransactionsByPocketId', {
+              type: 'expenses',
+              pocketId: pocket.id
+            })
+          }
+          // ลบหมวดหมู่
+          store.commit('deletePocket', {
+            type: pocket.type,
+            pocketId: pocket.id
+          })
+        }
+        selectedPockets.value = []
+        isSelectMode.value = false
+      }
+    }
+
+    const deletePocket = async (pocket) => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        text: `ต้องการลบหมวดหมู่ "${pocket.name}" หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        // ลบข้อมูลรายการที่เกี่ยวข้องกับหมวดหมู่นี้
+        store.commit('deleteTransactionsByPocketId', {
+          type: pocket.type === 'income' ? 'income' : 'expenses',
+          pocketId: pocket.id
+        })
+        // ลบหมวดหมู่
+        store.commit('deletePocket', {
+          type: pocket.type,
+          pocketId: pocket.id
+        })
+      }
+    }
+
+    // แก้ไขฟังก์ชัน editPocket
+    const editPocket = (pocket) => {
+      editingPocket.value = { ...pocket }
+      showEditModal.value = true
+    }
+
+    // แก้ไขฟังก์ชัน closeEditModal
+    const closeEditModal = () => {
+      showEditModal.value = false
+      editingPocket.value = null
+    }
+
+    // แก้ไขฟังก์ชัน updatePocket
+    const updatePocket = () => {
+      if (editingPocket.value) {
+        store.commit('updatePocket', {
+          type: editingPocket.value.type || 'income',
+          pocket: editingPocket.value
+        })
+        closeEditModal()
+      }
+    }
+
+    const handlePocketClick = (pocket) => {
+      if (isSelectMode.value) {
+        togglePocketSelection(pocket.id, pocket.type || 'income')
+      } else {
+        selectPocket(pocket)
+      }
+    }
+
     return {
       incomePockets,
       expensePockets,
@@ -326,7 +518,20 @@ export default {
       pocketTransactions,
       pocketTotal,
       formatDate,
-      availableIcons
+      availableIcons,
+      isSelectMode,
+      selectedPockets,
+      toggleSelectMode,
+      isPocketSelected,
+      togglePocketSelection,
+      handlePocketClick,
+      showEditModal,
+      editingPocket,
+      editPocket,
+      closeEditModal,
+      updatePocket,
+      deletePocket,
+      deleteSelectedPockets
     }
   }
 }
@@ -353,84 +558,82 @@ export default {
 }
 
 .pocket-card {
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  border: 1px solid #eee;
-}
-
-.pocket-card.income {
-  background: #f0fff4;
-}
-
-.pocket-card.expense {
-  background: #fff5f5;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
 }
 
 .pocket-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.pocket-card.selected.income {
-  background: var(--success-color);
-  color: white;
-}
-
-.pocket-card.selected.expense {
-  background: var(--danger-color);
-  color: white;
+.pocket-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  cursor: pointer;
 }
 
 .pocket-icon {
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  background: white;
-  flex-shrink: 0;
+  border-radius: 8px;
+  font-size: 1.2rem;
 }
 
-.selected .pocket-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+.pocket-card.income .pocket-icon {
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
-.pocket-info {
-  flex: 1;
-  min-width: 0;
+.pocket-card.expense .pocket-icon {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .pocket-info h4 {
   margin: 0;
   font-size: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.amount {
+.pocket-info .amount {
   margin: 0;
-  font-size: 0.875rem;
-  opacity: 0.9;
+  font-size: 0.9rem;
 }
 
-.selected-pocket-icon {
-  width: 35px;
-  height: 35px;
-  border-radius: 8px;
+.pocket-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary-light);
-  color: var(--primary-color);
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pocket-card:hover .pocket-actions {
+  opacity: 1;
+}
+
+.pocket-checkbox {
+  padding: 0 0.5rem;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+.pocket-card.multi-selected {
+  background-color: #f8f9fa;
+  border: 2px solid var(--primary-color);
 }
 
 /* Modal Styles */
