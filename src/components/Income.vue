@@ -21,10 +21,14 @@
       </div>
     </div>
 
-    <!-- Add Transaction Form -->
-    <div v-if="showAddForm" class="add-form-section my-4">
-      <div class="card">
-        <div class="card-body">
+    <!-- Add Transaction Modal -->
+    <div v-if="showAddForm" class="modal-overlay" @click.self="closeForm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="mb-0">{{ editingTransaction ? 'แก้ไขรายการ' : 'เพิ่มรายการ' }}</h3>
+          <button type="button" class="btn-close" @click="closeForm"></button>
+        </div>
+        <div class="modal-body">
           <transaction-form 
             :selected-date="selectedDate"
             :editing-transaction="editingTransaction"
@@ -156,7 +160,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useStore } from 'vuex'
 import Calendar from './shared/Calendar.vue'
 import TransactionForm from './shared/TransactionForm.vue'
@@ -231,13 +235,6 @@ export default {
       const newDate = new Date(date)
       newDate.setHours(0, 0, 0, 0)
       selectedDate.value = newDate
-      
-      // ใช้ nextTick และ timeout เพื่อให้แน่ใจว่า UI อัพเดตเสร็จแล้ว
-      nextTick(() => {
-        setTimeout(() => {
-          showAddForm.value = true
-        }, 100)
-      })
     }
 
     // แก้ไข filteredEntries computed
@@ -306,14 +303,14 @@ export default {
       editingTransaction.value = null
     }
 
-    const editTransaction = (transaction) => {
-      editingTransaction.value = transaction
-      showAddForm.value = true
-    }
-
     const closeForm = () => {
       showAddForm.value = false
       editingTransaction.value = null
+    }
+
+    const editTransaction = (transaction) => {
+      editingTransaction.value = transaction
+      showAddForm.value = true // จะแสดง Modal
     }
 
     const deleteTransaction = async (transaction) => {
@@ -449,6 +446,47 @@ export default {
 .btn-group-sm .btn {
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
+}
+
+/* เพิ่ม CSS สำหรับ Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+/* ปรับแต่ง TransactionForm ภายใน Modal */
+:deep(.transaction-form) {
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
 }
 
 @media (max-width: 768px) {

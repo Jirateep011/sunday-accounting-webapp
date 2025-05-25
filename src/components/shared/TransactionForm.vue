@@ -58,7 +58,7 @@
         <button type="submit" class="btn btn-primary flex-grow-1" :disabled="!isFormValid">
           {{ isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ' }}
         </button>
-        <button v-if="isEditing" type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
+        <button type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
           ยกเลิก
         </button>
       </div>
@@ -213,12 +213,7 @@ export default {
 
 <style scoped>
 .transaction-form {
-  max-width: 400px;
-  margin: auto;
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
 .form-label {
