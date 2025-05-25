@@ -151,13 +151,22 @@
             <table class="table table-hover">
               <thead>
                 <tr>
-                  <th>วันที่</th>
-                  <th>รายละเอียด</th>
-                  <th class="text-end">จำนวนเงิน</th>
+                  <th @click="sort('date')" style="cursor: pointer;">
+                    วันที่
+                    <i :class="getSortIcon('date')" class="ms-1"></i>
+                  </th>
+                  <th @click="sort('description')" style="cursor: pointer;">
+                    รายละเอียด
+                    <i :class="getSortIcon('description')" class="ms-1"></i>
+                  </th>
+                  <th class="text-end" @click="sort('amount')" style="cursor: pointer;">
+                    จำนวนเงิน
+                    <i :class="getSortIcon('amount')" class="ms-1"></i>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="transaction in paginatedTransactions" :key="transaction.id">
+                <tr v-for="transaction in sortedData" :key="transaction.id">
                   <td>{{ formatDate(transaction.date) }}</td>
                   <td>{{ transaction.description }}</td>
                   <td :class="[
@@ -320,7 +329,7 @@ export default {
     const incomePockets = computed(() => store.getters.getIncomePockets)
     const expensePockets = computed(() => store.getters.getExpensePockets)
 
-    const itemsPerPage = ref(15)
+    const itemsPerPage = ref(10)
     const currentPage = ref(1)
     const transactionsSection = ref(null)
 
@@ -615,6 +624,64 @@ export default {
       }
     }
 
+    // Add sort functionality
+    const sortConfig = ref({
+      key: 'date', // default sort by date
+      direction: 'desc' // default newest first
+    })
+
+    // Sort function
+    const sort = (key) => {
+      if (sortConfig.value.key === key) {
+        // Toggle direction if clicking same column
+        sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc'
+      } else {
+        // New column, set default to descending
+        sortConfig.value.key = key
+        sortConfig.value.direction = 'desc'
+      }
+    }
+
+    // Sort icon component helper
+    const getSortIcon = (key) => {
+      if (sortConfig.value.key === key) {
+        return sortConfig.value.direction === 'asc' 
+          ? 'fa-solid fa-sort-up' 
+          : 'fa-solid fa-sort-down'
+      }
+      return 'fa-solid fa-sort'
+    }
+
+    // Sorted data computed property
+    const sortedData = computed(() => {
+      const data = [...pocketTransactions.value]
+      
+      return data.sort((a, b) => {
+        let compareResult = 0
+        
+        switch(sortConfig.value.key) {
+          case 'date':
+            compareResult = new Date(a.date) - new Date(b.date)
+            break
+          case 'amount':
+            compareResult = Number(a.amount) - Number(b.amount)
+            break
+          case 'description':
+            compareResult = a.description.localeCompare(b.description)
+            break
+          default:
+            compareResult = 0
+        }
+        
+        return sortConfig.value.direction === 'asc' ? compareResult : -compareResult
+      })
+    })
+
+    // ปรับปรุง paginatedData
+    const paginatedData = computed(() => {
+      return sortedData.value.slice(startIndex.value, endIndex.value)
+    })
+
     return {
       incomePockets,
       expensePockets,
@@ -649,10 +716,14 @@ export default {
       itemsPerPage,
       currentPage,
       totalPages,
-      paginatedTransactions,
+      paginatedData,
       displayedPages,
       changePage,
-      transactionsSection
+      transactionsSection,
+      // Sort functionality
+      sort,
+      getSortIcon,
+      sortedData
     }
   }
 }

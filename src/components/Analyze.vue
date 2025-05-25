@@ -1,28 +1,23 @@
 <template>
   <div class="analyze container-fluid">
-    <!-- Header Section -->
-    <div class="section-header">
+    <!-- ส่วนหัว (Period Selector และ Export/Import) -->
+    <div class="section-header mb-4">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <!-- เลือกปี/เดือน -->
-        <div class="d-flex align-items-center gap-3">
-          <!-- Period Selector -->
+        <!-- Period Selector -->
+        <div class="d-flex flex-wrap align-items-center gap-3">
           <div class="period-selector d-flex align-items-center gap-3">
             <div class="input-group month-select">
-              <label class="input-group-text">เดือน</label>
+              <span class="input-group-text"><i class="fa-solid fa-calendar"></i></span>
               <select v-model="selectedMonth" class="form-select">
-                <option v-for="(month, index) in months" 
-                        :key="index" 
-                        :value="index">
+                <option v-for="(month, index) in months" :key="index" :value="index">
                   {{ month }}
                 </option>
               </select>
             </div>
-            <div class="input-group">
-              <label class="input-group-text">ปี</label>
+            <div class="input-group year-select">
+              <span class="input-group-text"><i class="fa-solid fa-calendar-days"></i></span>
               <select v-model="selectedYear" class="form-select">
-                <option v-for="year in yearRange" 
-                        :key="year" 
-                        :value="year">
+                <option v-for="year in yearRange" :key="year" :value="year">
                   {{ year + 543 }}
                 </option>
               </select>
@@ -30,15 +25,12 @@
           </div>
         </div>
 
-        <!-- ปุ่ม Download และ Import -->
-        <div class="d-flex gap-2">
-          <!-- ปุ่ม Download เดิม -->
+        <!-- Export/Import Buttons -->
+        <div class="action-buttons d-flex gap-2">
           <div class="dropdown">
-            <button class="btn btn-primary dropdown-toggle" 
-                    type="button" 
-                    data-bs-toggle="dropdown">
-              <i class="bi bi-download me-2"></i>
-              ดาวน์โหลดรายงาน
+            <button class="btn btn-primary" type="button" data-bs-toggle="dropdown">
+              <i class="fa-solid fa-download me-2"></i>
+              ดาวน์โหลด
             </button>
             <ul class="dropdown-menu">
               <li class="dropdown-header">เลือกประเภทรายการ</li>
@@ -86,13 +78,10 @@
             </ul>
           </div>
 
-          <!-- เพิ่มปุ่ม Import -->
           <div class="dropdown">
-            <button class="btn btn-success dropdown-toggle" 
-                    type="button" 
-                    data-bs-toggle="dropdown">
-              <i class="bi bi-upload me-2"></i>
-              นำเข้าข้อมูล
+            <button class="btn btn-success" type="button" data-bs-toggle="dropdown">
+              <i class="fa-solid fa-upload me-2"></i>
+              นำเข้า
             </button>
             <ul class="dropdown-menu">
               <li class="dropdown-header">เลือกการนำเข้า</li>
@@ -125,13 +114,13 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-4 mt-3">
+    <div class="row g-4">
       <div class="col-12 col-md-4">
-        <div class="card summary-card income" role="button" @click="showTransactionDetails('income')">
+        <div class="summary-card income" @click="showTransactionDetails('income')" ref="incomeCard">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
-                <i class="bi bi-graph-up-arrow"></i>
+                <i class="fa-solid fa-arrow-trend-up"></i>
               </div>
               <div>
                 <h6 class="mb-1">รายรับทั้งหมด</h6>
@@ -143,11 +132,11 @@
       </div>
 
       <div class="col-12 col-md-4">
-        <div class="card summary-card expense" role="button" @click="showTransactionDetails('expense')">
+        <div class="summary-card expense" @click="showTransactionDetails('expense')" ref="expenseCard">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
-                <i class="bi bi-graph-down-arrow"></i>
+                <i class="fa-solid fa-arrow-trend-down"></i>
               </div>
               <div>
                 <h6 class="mb-1">รายจ่ายทั้งหมด</h6>
@@ -159,11 +148,11 @@
       </div>
 
       <div class="col-12 col-md-4">
-        <div class="card summary-card balance" role="button" @click="showTransactionDetails('all')">
+        <div class="summary-card balance" @click="showTransactionDetails('all')" ref="balanceCard">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
-                <i class="bi bi-wallet2"></i>
+                <i class="fa-solid fa-wallet"></i>
               </div>
               <div>
                 <h6 class="mb-1">คงเหลือ</h6>
@@ -176,7 +165,7 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="row g-4 mt-4">
+    <div class="row g-4 mt-4" ref="chartsSection">
       <!-- Income Chart -->
       <div class="col-12 col-lg-6">
         <div class="card h-100">
@@ -210,8 +199,8 @@
       </div>
     </div>
 
-    <!-- Transaction Details Section - แทนที่ modal เดิม -->
-    <div v-if="showDetails" class="row mt-4">
+    <!-- Transaction Details -->
+    <div v-if="showDetails" class="row mt-4" ref="transactionDetails">
       <div class="col-12">
         <div class="card">
           <div class="card-body">
@@ -231,15 +220,30 @@
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th>วันที่</th>
-                    <th>ประเภท</th>
-                    <th>หมวดหมู่</th>
-                    <th>รายละเอียด</th>
-                    <th class="text-end">จำนวนเงิน</th>
+                    <th @click="sort('date')" :class="{'sortable': true}">
+                      วันที่
+                      <i v-if="getSortIcon('date')" :class="getSortIcon('date')"></i>
+                    </th>
+                    <th @click="sort('type')" :class="{'sortable': true}">
+                      ประเภท
+                      <i v-if="getSortIcon('type')" :class="getSortIcon('type')"></i>
+                    </th>
+                    <th @click="sort('category')" :class="{'sortable': true}">
+                      หมวดหมู่
+                      <i v-if="getSortIcon('category')" :class="getSortIcon('category')"></i>
+                    </th>
+                    <th @click="sort('description')" :class="{'sortable': true}">
+                      รายละเอียด
+                      <i v-if="getSortIcon('description')" :class="getSortIcon('description')"></i>
+                    </th>
+                    <th @click="sort('amount')" class="text-end sortable">
+                      จำนวนเงิน
+                      <i v-if="getSortIcon('amount')" :class="getSortIcon('amount')"></i>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in filteredTransactions" :key="item.id"
+                  <tr v-for="item in paginatedData" :key="item.id"
                       :class="item.type === 'income' ? 'table-success' : 'table-danger'">
                     <td>{{ formatDate(item.date) }}</td>
                     <td>{{ item.type === 'income' ? 'รายรับ' : 'รายจ่าย' }}</td>
@@ -256,6 +260,29 @@
                 </tfoot>
               </table>
             </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-controls mt-3">
+              <button 
+                class="btn btn-outline-primary"
+                @click="currentPage = Math.max(1, currentPage - 1)"
+                :disabled="currentPage === 1"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+                ก่อนหน้า
+              </button>
+              <span class="current-page">
+                หน้า {{ currentPage }} / {{ Math.ceil(sortedData.length / itemsPerPage) }}
+              </span>
+              <button 
+                class="btn btn-outline-primary"
+                @click="currentPage = Math.min(Math.ceil(sortedData.length / itemsPerPage), currentPage + 1)"
+                :disabled="currentPage === Math.ceil(sortedData.length / itemsPerPage)"
+              >
+                ถัดไป
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -271,17 +298,20 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import addThaiFonts from '../utils/fonts'
 import * as XLSX from 'xlsx'
-import Swal from 'sweetalert2' // เพิ่ม import Swal
+import Swal from 'sweetalert2'
 
 export default {
   name: 'Analyze',
   setup() {
     const store = useStore()
+    // Add refs
     const incomeChart = ref(null)
     const expenseChart = ref(null)
+    const chartsSection = ref(null) // Add this line
+    const transactionDetails = ref(null) // Add this line
     const exportType = ref('all')
-    let incomeChartInstance = null
-    let expenseChartInstance = null
+    const showDetails = ref(false)
+    const selectedType = ref('all')
 
     const months = [
       'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
@@ -361,15 +391,32 @@ export default {
     }
 
     const createChart = (canvas, data, type) => {
-      // แยกโทนสีสำหรับรายรับและรายจ่าย
+      // Pastel colors for income
       const incomeColors = [
-        '#4CAF50', '#81C784', '#A5D6A7', '#C8E6C9', '#E8F5E9',
-        '#2E7D32', '#388E3C', '#43A047', '#66BB6A', '#98EE99'
+        '#4ade80', // Green
+        '#34d399', // Emerald
+        '#2dd4bf', // Teal
+        '#22d3ee', // Cyan
+        '#38bdf8', // Light Blue
+        '#60a5fa', // Blue
+        '#818cf8', // Indigo
+        '#a78bfa', // Violet
+        '#c084fc', // Purple
+        '#e879f9'  // Fuchsia
       ]
 
+      // Pastel colors for expenses
       const expenseColors = [
-        '#F44336', '#E57373', '#EF9A9A', '#FFCDD2', '#FFEBEE',
-        '#C62828', '#D32F2F', '#E53935', '#F44336', '#FF5252'
+        '#fb7185', // Rose
+        '#f472b6', // Pink
+        '#e879f9', // Fuchsia
+        '#c084fc', // Purple
+        '#a78bfa', // Violet
+        '#818cf8', // Indigo
+        '#7dd3fc', // Sky
+        '#67e8f9', // Cyan
+        '#5eead4', // Teal
+        '#86efac'  // Green
       ]
 
       // เลือกชุดสีตามประเภท
@@ -771,10 +818,6 @@ export default {
       addThaiFonts()
     })
 
-    // เพิ่ม state สำหรับ transaction details
-    const showDetails = ref(false)
-    const selectedType = ref('all')
-
     const formatDate = (date) => {
       return new Date(date).toLocaleDateString('th-TH')
     }
@@ -804,10 +847,95 @@ export default {
       return balance.value
     })
 
+    const scrollToSection = (ref) => {
+      nextTick(() => {
+        if (ref.value) {
+          ref.value.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }
+      })
+    }
+
     const showTransactionDetails = (type) => {
       selectedType.value = type
       showDetails.value = true
+      nextTick(() => {
+        scrollToSection(transactionDetails)
+      })
     }
+
+    // Add to script setup in each component that has a table
+    const sortConfig = ref({
+      key: 'date', // default sort by date
+      direction: 'desc' // default newest first
+    })
+
+    // Sort function
+    const sort = (key) => {
+      if (sortConfig.value.key === key) {
+        // Toggle direction if clicking same column
+        sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc'
+      } else {
+        // New column, set default to descending
+        sortConfig.value.key = key
+        sortConfig.value.direction = 'desc'
+      }
+    }
+
+    // Sort icon component helper
+    const getSortIcon = (key) => {
+      if (sortConfig.value.key === key) {
+        return sortConfig.value.direction === 'asc' 
+          ? 'fa-solid fa-sort-up' 
+          : 'fa-solid fa-sort-down'
+      }
+      return 'fa-solid fa-sort'
+    }
+
+    // เพิ่ม pagination สำหรับตารางแสดงรายการ
+    const itemsPerPage = ref(10)
+    const currentPage = ref(1)
+
+    const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+    const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage.value, sortedData.value.length))
+
+    // Sorted data computed property
+    const sortedData = computed(() => {
+      const data = [...filteredTransactions.value] // or whatever your data source is
+      
+      return data.sort((a, b) => {
+        let compareResult = 0
+        
+        switch(sortConfig.value.key) {
+          case 'date':
+            compareResult = new Date(a.date) - new Date(b.date)
+            break
+          case 'amount':
+            compareResult = Number(a.amount) - Number(b.amount)
+            break
+          case 'type':
+            compareResult = a.type.localeCompare(b.type)
+            break
+          case 'category':
+            compareResult = getPocketName(a.pocketId, a.type).localeCompare(getPocketName(b.pocketId, b.type))
+            break
+          case 'description':
+            compareResult = a.description.localeCompare(b.description)
+            break
+          default:
+            compareResult = 0
+        }
+        
+        return sortConfig.value.direction === 'asc' ? compareResult : -compareResult
+      })
+    })
+
+    // เพิ่ม paginatedData
+    const paginatedData = computed(() => {
+      return sortedData.value.slice(startIndex.value, endIndex.value)
+    })
 
     return {
       months,
@@ -833,7 +961,18 @@ export default {
       getPocketName,
       filteredTransactions,
       totalAmount,
-      showTransactionDetails
+      chartsSection,
+      transactionDetails,
+      scrollToSection,
+      showTransactionDetails,
+      sort,
+      getSortIcon,
+      sortedData,
+      itemsPerPage,
+      currentPage,
+      startIndex,
+      endIndex,
+      paginatedData
     }
   }
 }
@@ -841,149 +980,155 @@ export default {
 
 <style scoped>
 .section-header {
-  background: white;
+  background: var(--white);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
+.period-selector .input-group {
+  min-width: 160px;
+  background: var(--white);
+  border-radius: var(--border-radius);
+}
+
+.period-selector .input-group-text {
+  background: transparent;
+  border-color: var(--border-color);
+}
+
+.form-select {
+  border-color: var(--border-color);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-select:hover {
+  border-color: var(--primary-color);
+}
+
+/* Summary Cards Styling */
 .summary-card {
-  height: 100%;
-  transition: transform 0.2s ease;
+  background: var(--white);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .summary-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.summary-card .card-body {
+  padding: 1rem;
+}
+
+.summary-card h6 {
+  font-size: 1rem;
+  color: var(--text-light);
+}
+
+.summary-card h3 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Icon Wrappers */
 .icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 16px;
   font-size: 1.5rem;
 }
 
-.summary-card.income .icon-wrapper {
+/* Income Card */
+.income .icon-wrapper {
   background: #e8f5e9;
-  color: var(--success-color);
+  color: #2e7d32;
 }
 
-.summary-card.expense .icon-wrapper {
+/* Expense Card */
+.expense .icon-wrapper {
   background: #ffebee;
-  color: var(--danger-color);
+  color: #c62828;
 }
 
-.summary-card.balance .icon-wrapper {
-  background: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.month-select {
-  min-width: 180px; /* เพิ่มความกว้างของช่องเลือกเดือน */
-}
-
-.form-select {
-  cursor: pointer;
-  font-size: 0.95rem;
+/* Balance Card */
+.balance .icon-wrapper {
+  background: #e3f2fd;
+  color: #1565c0;
 }
 
 .chart-container {
-  position: relative;
-  height: 350px; /* เพิ่มความสูงของกราฟ */
-  margin: 1rem 0;
-}
-
-/* ปรับแต่ง chart legend */
-:deep(.chart-legend) {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
+  min-height: 350px;
+  padding: 1rem;
 }
 
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   padding: 3rem;
+  text-align: center;
   color: var(--text-light);
 }
 
 .empty-state i {
   font-size: 3rem;
   margin-bottom: 1rem;
+  opacity: 0.5;
 }
 
-.dropdown-menu {
-  min-width: 250px;
-}
-
-.form-check-label {
+.sortable {
   cursor: pointer;
 }
 
-.summary-card {
-  cursor: pointer;
+.sortable:hover {
+  text-decoration: underline;
 }
 
-.table > :not(:first-child) {
-  border-top: none;
+.sortable i {
+  margin-left: 0.5rem;
+  opacity: 0.7;
 }
 
-.table th {
-  background: white;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
 }
 
-.btn-close {
-  padding: 0.5rem;
+.current-page {
+  font-size: 0.9rem;
+  color: var(--text-dark);
 }
 
-/* Animation for expanding details */
-.row {
-  transition: all 0.3s ease-in-out;
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
-/* Optional: Add some animation when showing/hiding the table */
-.row-enter-active,
-.row-leave-active {
-  transition: opacity 0.3s ease-in-out;
-}
-
-.row-enter-from,
-.row-leave-to {
-  opacity: 0;
+.btn-outline-primary:disabled {
+  color: var(--text-muted);
+  border-color: var(--text-muted);
 }
 
 @media (max-width: 768px) {
-  .section-header {
-    padding: 1rem;
-  }
-
   .period-selector {
     width: 100%;
     flex-wrap: wrap;
   }
-
+  
   .input-group {
     flex: 1;
-    min-width: 150px;
-  }
-
-  .month-select {
-    min-width: 100%;
-    margin-bottom: 0.5rem;
-  }
-
-  .chart-container {
-    height: 250px;
+    min-width: 140px;
   }
 }
 </style>

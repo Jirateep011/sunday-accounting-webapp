@@ -75,15 +75,23 @@
       <!-- Transactions Table Column -->
       <div class="col-12 col-lg-8 order-1 order-lg-2">
         <div class="card h-100">
-          <div class="card-body p-0">
-            <div class="table-responsive">
+          <div class="card-body p-0 d-flex flex-column">  <!-- เพิ่ม d-flex และ flex-column -->
+            <div class="table-responsive flex-grow-1"> <!-- เพิ่ม flex-grow-1 -->
               <table class="table table-hover mb-0">
                 <thead>
                   <tr>
-                    <th>วันที่</th>
-                    <th>รายละเอียด</th>
-                    <th>หมวดหมู่</th>
-                    <th class="text-end">จำนวน</th>
+                    <th @click="sort('date')" style="cursor: pointer;">วันที่
+                      <i :class="getSortIcon('date')" class="sort-icon"></i>
+                    </th>
+                    <th @click="sort('description')" style="cursor: pointer;">รายละเอียด
+                      <i :class="getSortIcon('description')" class="sort-icon"></i>
+                    </th>
+                    <th @click="sort('category')" style="cursor: pointer;">หมวดหมู่
+                      <i :class="getSortIcon('category')" class="sort-icon"></i>
+                    </th>
+                    <th @click="sort('amount')" class="text-end" style="cursor: pointer;">จำนวน
+                      <i :class="getSortIcon('amount')" class="sort-icon"></i>
+                    </th>
                     <th class="text-end">จัดการ</th>
                   </tr>
                 </thead>
@@ -121,35 +129,35 @@
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
 
-        <!-- Pagination -->
-        <div class="pagination-section mt-4">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-            <div class="text-muted">
-              แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ sortedExpenses.length }} รายการ
+            <!-- ย้าย pagination มาอยู่ใน card-body -->
+            <div class="pagination-wrapper p-3 mt-auto border-top"> <!-- เพิ่ม class และ style ใหม่ -->
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="text-muted">
+                  แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ sortedExpenses.length }} รายการ
+                </div>
+                <nav v-if="totalPages > 1">
+                  <ul class="pagination pagination-sm mb-0"> <!-- เพิ่ม mb-0 -->
+                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                      <button class="page-link" @click="changePage(currentPage - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                    </li>
+                    <li v-for="page in displayedPages" 
+                        :key="page" 
+                        class="page-item"
+                        :class="{ active: currentPage === page }">
+                      <button class="page-link" @click="changePage(page)">{{ page }}</button>
+                    </li>
+                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                      <button class="page-link" @click="changePage(currentPage + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
             </div>
-            <nav v-if="totalPages > 1">
-              <ul class="pagination pagination-sm mb-0">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <button class="page-link" @click="changePage(currentPage - 1)">
-                    <i class="bi bi-chevron-left"></i>
-                  </button>
-                </li>
-                <li v-for="page in displayedPages" 
-                    :key="page" 
-                    class="page-item"
-                    :class="{ active: currentPage === page }">
-                  <button class="page-link" @click="changePage(page)">{{ page }}</button>
-                </li>
-                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                  <button class="page-link" @click="changePage(currentPage + 1)">
-                    <i class="bi bi-chevron-right"></i>
-                  </button>
-                </li>
-              </ul>
-            </nav>
           </div>
         </div>
       </div>
@@ -176,6 +184,11 @@ export default {
     const selectedDate = ref(new Date())
     const showAddForm = ref(false)
     const editingTransaction = ref(null)
+
+    const sortConfig = ref({
+      key: 'date', // default sort by date
+      direction: 'desc' // default newest first
+    })
 
     const sortedExpenses = computed(() => {
       return [...store.state.expenses].sort((a, b) =>
@@ -311,6 +324,57 @@ export default {
       selectedDate.value = newDate
     }
 
+    const sort = (key) => {
+      if (sortConfig.value.key === key) {
+        // Toggle direction if clicking same column
+        sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc'
+      } else {
+        // New column, set default to descending
+        sortConfig.value.key = key
+        sortConfig.value.direction = 'desc'
+      }
+    }
+
+    const getSortIcon = (key) => {
+      if (sortConfig.value.key === key) {
+        return sortConfig.value.direction === 'asc' 
+          ? 'fa-solid fa-sort-up' 
+          : 'fa-solid fa-sort-down'
+      }
+      return 'fa-solid fa-sort'
+    }
+
+    const sortedData = computed(() => {
+      const data = [...filteredExpenses.value] // or whatever your data source is
+      
+      return data.sort((a, b) => {
+        let compareResult = 0
+        
+        switch(sortConfig.value.key) {
+          case 'date':
+            compareResult = new Date(a.date) - new Date(b.date)
+            break
+          case 'amount':
+            compareResult = Number(a.amount) - Number(b.amount)
+            break
+          case 'description':
+            compareResult = a.description.localeCompare(b.description)
+            break
+          case 'category':
+            compareResult = getPocketName(a.pocketId).localeCompare(getPocketName(b.pocketId))
+            break
+          default:
+            compareResult = 0
+        }
+        
+        return sortConfig.value.direction === 'asc' ? compareResult : -compareResult
+      })
+    })
+
+    const paginatedData = computed(() => {
+      return sortedData.value.slice(startIndex.value, endIndex.value)
+    })
+
     watch(selectedDate, () => {
       currentPage.value = 1
     })
@@ -343,7 +407,10 @@ export default {
       editTransaction,
       deleteTransaction,
       handleDateSelected,
-      closeForm
+      closeForm,
+      sort,
+      getSortIcon,
+      sortConfig
     }
   }
 }
