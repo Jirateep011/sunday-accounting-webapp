@@ -5,23 +5,8 @@ import THSarabunNew from '../assets/fonts/THSarabunNew.ttf'
 import THSarabunNewBold from '../assets/fonts/THSarabunNew Bold.ttf'
 
 const addThaiFonts = () => {
-  try {
-    // Add normal font
-    jsPDF.API.addFont(
-      THSarabunNew,
-      'THSarabunNew',
-      'normal'
-    )
-    
-    // Add bold font
-    jsPDF.API.addFont(
-      THSarabunNewBold,
-      'THSarabunNew',
-      'bold'
-    )
-  } catch (error) {
-    console.error('Error loading fonts:', error)
-  }
+  // ปรับให้เป็นฟังก์ชันเปล่าก่อน เพื่อไม่ให้เกิด error
+  return
 }
 
 export default addThaiFonts

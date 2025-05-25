@@ -103,6 +103,14 @@ export default createStore({
     deleteTransaction(state, { type, id }) {
       state[type] = state[type].filter(t => t.id !== id)
       saveState(state)
+    },
+
+    importData(state, importedData) {
+      state.income = importedData.income
+      state.expenses = importedData.expenses
+      state.incomePockets = importedData.incomePockets
+      state.expensePockets = importedData.expensePockets
+      saveState(state)
     }
   },
   actions: {
