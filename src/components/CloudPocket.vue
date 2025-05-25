@@ -322,10 +322,15 @@ export default {
     }
 
     const calculatePocketTotal = (pocketId, type) => {
-      const transactions = type === 'income' ? store.state.income : store.state.expenses
-      return transactions
-        .filter(t => t.pocketId === pocketId)
-        .reduce((sum, t) => sum + Number(t.amount), 0)
+      const transactions = type === 'income' 
+        ? store.state.income.filter(t => t.pocketId === pocketId)
+        : store.state.expenses.filter(t => t.pocketId === pocketId)
+      
+      return transactions.reduce((sum, t) => {
+        // ตรวจสอบว่า amount เป็นตัวเลขหรือไม่
+        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount
+        return sum + (isNaN(amount) ? 0 : amount)
+      }, 0)
     }
 
     const handleTransaction = (transaction) => {

@@ -608,26 +608,73 @@ export default {
             if (isMergeMode) {
               // โหมดเพิ่มข้อมูลใหม่
               const mergedData = {
-                // รวมข้อมูลรายรับ โดยตรวจสอบ ID ที่ไม่ซ้ำกัน
-                income: [...store.state.income, ...importedData.income].filter((item, index, self) =>
-                  index === self.findIndex((t) => t.id === item.id)
-                ),
+                // รวมข้อมูลหมวดหมู่รายรับ โดยตรวจสอบชื่อที่ซ้ำกัน
+                incomePockets: [...new Map([
+                  ...store.state.incomePockets,
+                  ...importedData.incomePockets
+                ].map(item => [item.name, item])).values()],
                 
-                // รวมข้อมูลรายจ่าย โดยตรวจสอบ ID ที่ไม่ซ้ำกัน
-                expenses: [...store.state.expenses, ...importedData.expenses].filter((item, index, self) =>
-                  index === self.findIndex((t) => t.id === item.id)
-                ),
-                
-                // รวมข้อมูลหมวดหมู่รายรับ โดยตรวจสอบ ID ที่ไม่ซ้ำกัน
-                incomePockets: [...store.state.incomePockets, ...importedData.incomePockets].filter((item, index, self) =>
-                  index === self.findIndex((t) => t.id === item.id)
-                ),
-                
-                // รวมข้อมูลหมวดหมู่รายจ่าย โดยตรวจสอบ ID ที่ไม่ซ้ำกัน
-                expensePockets: [...store.state.expensePockets, ...importedData.expensePockets].filter((item, index, self) =>
-                  index === self.findIndex((t) => t.id === item.id)
-                )
-              }
+                // รวมข้อมูลหมวดหมู่รายจ่าย โดยตรวจสอบชื่อที่ซ้ำกัน
+                expensePockets: [...new Map([
+                  ...store.state.expensePockets,
+                  ...importedData.expensePockets
+                ].map(item => [item.name, item])).values()],
+
+                // สร้าง mapping ระหว่าง pocketId เก่าและใหม่
+                income: (() => {
+                  // สร้าง Map เพื่อเก็บความสัมพันธ์ระหว่างชื่อหมวดหมู่และ ID ใหม่
+                  const pocketNameToIdMap = new Map(
+                    mergedData.incomePockets.map(pocket => [pocket.name, pocket.id])
+                  );
+
+                  // รวมข้อมูลรายรับเดิม
+                  const existingIncome = store.state.income.map(item => {
+                    const pocket = store.state.incomePockets.find(p => p.id === item.pocketId);
+                    return {
+                      ...item,
+                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
+                    };
+                  });
+
+                  // รวมข้อมูลรายรับใหม่
+                  const newIncome = importedData.income.map(item => {
+                    const pocket = importedData.incomePockets.find(p => p.id === item.pocketId);
+                    return {
+                      ...item,
+                      id: Date.now() + Math.random(),
+                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
+                    };
+                  });
+
+                  return [...existingIncome, ...newIncome];
+                })(),
+
+                // สร้าง mapping ระหว่าง pocketId เก่าและใหม่สำหรับรายจ่าย
+                expenses: (() => {
+                  const pocketNameToIdMap = new Map(
+                    mergedData.expensePockets.map(pocket => [pocket.name, pocket.id])
+                  );
+
+                  const existingExpenses = store.state.expenses.map(item => {
+                    const pocket = store.state.expensePockets.find(p => p.id === item.pocketId);
+                    return {
+                      ...item,
+                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
+                    };
+                  });
+
+                  const newExpenses = importedData.expenses.map(item => {
+                    const pocket = importedData.expensePockets.find(p => p.id === item.pocketId);
+                    return {
+                      ...item,
+                      id: Date.now() + Math.random(),
+                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
+                    };
+                  });
+
+                  return [...existingExpenses, ...newExpenses];
+                })()
+              };
               
               store.commit('importData', mergedData)
             } else {
