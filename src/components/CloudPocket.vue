@@ -5,14 +5,17 @@
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0">หมวดหมู่รายรับ-รายจ่าย</h2>
         <div class="actions">
+          <!-- Delete selected button -->
           <button class="btn btn-danger btn-sm me-2" 
                   :disabled="!selectedPockets.length"
                   @click="deleteSelectedPockets">
-            <i class="bi bi-trash me-1"></i>
+            <i class="fa-solid fa-trash me-1"></i>
             ลบที่เลือก ({{ selectedPockets.length }})
           </button>
+
+          <!-- Select mode toggle button -->
           <button class="btn btn-outline-secondary btn-sm" @click="toggleSelectMode">
-            <i class="bi" :class="isSelectMode ? 'bi-x-lg' : 'bi-check-square'"></i>
+            <i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-check-square'"></i>
             {{ isSelectMode ? 'ยกเลิก' : 'เลือกหลายรายการ' }}
           </button>
         </div>
@@ -28,8 +31,9 @@
               <i class="bi bi-graph-up-arrow text-success me-2"></i>
               รายรับ
             </h3>
+            <!-- Add category buttons -->
             <button class="btn btn-outline-success btn-sm" @click="showAddPocketModal('income')">
-              <i class="bi bi-plus-lg"></i>
+              <i class="fa-solid fa-plus"></i>
               เพิ่มหมวดหมู่
             </button>
           </div>
@@ -48,11 +52,12 @@
                 </div>
               </div>
               <div class="pocket-actions" v-if="!isSelectMode">
+                <!-- Edit and delete buttons in pocket cards -->
                 <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'income'})">
-                  <i class="bi bi-pencil"></i>
+                  <i class="fa-solid fa-pen"></i>
                 </button>
                 <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'income'})">
-                  <i class="bi bi-trash"></i>
+                  <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
               <div class="pocket-checkbox" v-else>
@@ -75,7 +80,7 @@
               รายจ่าย
             </h3>
             <button class="btn btn-outline-danger btn-sm" @click="showAddPocketModal('expense')">
-              <i class="bi bi-plus-lg"></i>
+              <i class="fa-solid fa-plus"></i>
               เพิ่มหมวดหมู่
             </button>
           </div>
@@ -95,10 +100,10 @@
               </div>
               <div class="pocket-actions" v-if="!isSelectMode">
                 <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'expense'})">
-                  <i class="bi bi-pencil"></i>
+                  <i class="fa-solid fa-pen"></i>
                 </button>
                 <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'expense'})">
-                  <i class="bi bi-trash"></i>
+                  <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
               <div class="pocket-checkbox" v-else>
@@ -114,7 +119,7 @@
     </div>
 
     <!-- Transactions Section -->
-    <div class="row mt-4" v-if="selectedPocket">
+    <div ref="transactionsSection" class="row mt-4" v-if="selectedPocket">
       <div class="col-12">
         <div class="transaction-section">
           <div class="section-header mb-4">
@@ -134,7 +139,11 @@
 
           <!-- Add Transaction Form -->
           <div v-if="showAddForm" class="add-form-section my-4">
-            <transaction-form :selected-pocket="selectedPocket" @transaction-added="handleTransaction" />
+            <transaction-form 
+              :selected-date="selectedDate"
+              :selected-pocket="selectedPocket" 
+              @transaction-added="handleTransaction" 
+            />
           </div>
 
           <!-- Transactions List -->
@@ -148,7 +157,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="transaction in pocketTransactions" :key="transaction.id">
+                <tr v-for="transaction in paginatedTransactions" :key="transaction.id">
                   <td>{{ formatDate(transaction.date) }}</td>
                   <td>{{ transaction.description }}</td>
                   <td :class="[
@@ -169,15 +178,36 @@
               <tfoot v-if="pocketTransactions.length > 0">
                 <tr>
                   <td colspan="2" class="text-end fw-bold">ยอดรวม:</td>
-                  <td :class="[
-                    'text-end fw-bold',
-                    pocketTotal >= 0 ? 'text-success' : 'text-danger'
-                  ]">
+                  <td :class="['text-end fw-bold', pocketTotal >= 0 ? 'text-success' : 'text-danger']">
                     {{ pocketTotal.toLocaleString() }} ฿
                   </td>
                 </tr>
               </tfoot>
             </table>
+
+            <!-- Pagination -->
+            <div v-if="totalPages > 1" class="d-flex justify-content-center mt-4">
+              <nav>
+                <ul class="pagination pagination-sm">
+                  <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                    <button class="page-link" @click="changePage(currentPage - 1)">
+                      <i class="bi bi-chevron-left"></i>
+                    </button>
+                  </li>
+                  <li v-for="page in displayedPages" 
+                      :key="page" 
+                      class="page-item"
+                      :class="{ active: currentPage === page }">
+                    <button class="page-link" @click="changePage(page)">{{ page }}</button>
+                  </li>
+                  <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                    <button class="page-link" @click="changePage(currentPage + 1)">
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
         </div>
       </div>
@@ -260,15 +290,15 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import Swal from 'sweetalert2'
-import TransactionForm from './shared/TransactionForm.vue' // เพิ่ม import
+import TransactionForm from './shared/TransactionForm.vue'
 
 export default {
   name: 'CloudPocket',
   components: {
-    TransactionForm // เพิ่ม component registration
+    TransactionForm
   },
   setup() {
     const store = useStore()
@@ -280,21 +310,78 @@ export default {
       icon: 'bi bi-wallet'
     })
     const showAddForm = ref(false)
-    const showEditModal = ref(false) // เพิ่ม ref สำหรับ modal แก้ไข
-    const editingPocket = ref(null) // เพิ่ม ref สำหรับข้อมูลที่กำลังแก้ไข
+    const showEditModal = ref(false)
+    const editingPocket = ref(null)
     const isSelectMode = ref(false)
     const selectedPockets = ref([])
+    // เพิ่ม selectedDate
+    const selectedDate = ref(new Date())
 
     const incomePockets = computed(() => store.getters.getIncomePockets)
     const expensePockets = computed(() => store.getters.getExpensePockets)
 
-    const selectPocket = (pocket) => {
-      selectedPocket.value = pocket
+    const itemsPerPage = ref(15)
+    const currentPage = ref(1)
+    const transactionsSection = ref(null)
+
+    // Pagination logic
+    const totalPages = computed(() => {
+      return Math.ceil(pocketTransactions.value.length / itemsPerPage.value)
+    })
+
+    const startIndex = computed(() => {
+      return (currentPage.value - 1) * itemsPerPage.value
+    })
+
+    const endIndex = computed(() => {
+      return Math.min(startIndex.value + itemsPerPage.value, pocketTransactions.value.length)
+    })
+
+    const paginatedTransactions = computed(() => {
+      return pocketTransactions.value.slice(startIndex.value, endIndex.value)
+    })
+
+    const displayedPages = computed(() => {
+      const pages = []
+      let start = Math.max(1, currentPage.value - 2)
+      let end = Math.min(totalPages.value, start + 4)
+      
+      if (end - start < 4) {
+        start = Math.max(1, end - 4)
+      }
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+      return pages
+    })
+
+    const changePage = (page) => {
+      if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page
+      }
     }
 
-    const showAddPocketModal = (type) => {
-      newPocketType.value = type
-      showModal.value = true
+    const scrollToTransactions = () => {
+      // รอให้ DOM อัพเดทก่อนทำการ scroll
+      nextTick(() => {
+        if (transactionsSection.value) {
+          transactionsSection.value.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }
+      })
+    }
+
+    const selectPocket = (pocket) => {
+      if (isSelectMode.value) {
+        togglePocketSelection(pocket.id, pocket.type || 'income')
+      } else {
+        selectedPocket.value = pocket
+        currentPage.value = 1 // รีเซ็ตหน้าเป็นหน้าแรก
+        scrollToTransactions() // เรียกใช้ฟังก์ชัน scroll
+      }
     }
 
     const closeModal = () => {
@@ -377,22 +464,33 @@ export default {
 
     // เพิ่มรายการไอคอนที่มีให้เลือก
     const availableIcons = [
-      { value: 'bi bi-wallet' },
-      { value: 'bi bi-cart' },
-      { value: 'bi bi-house' },
-      { value: 'bi bi-controller' },
-      { value: 'bi bi-briefcase' },
-      { value: 'bi bi-rss' },
-      { value: 'bi bi-bank' },
-      { value: 'bi bi-gift' },
-      { value: 'bi bi-cash-coin' },
-      { value: 'bi bi-shop' },
-      { value: 'bi bi-spotify' },
-      { value: 'bi bi-book' },
-      { value: 'bi bi-steam' },
-      { value: 'bi bi-wifi' },
-      { value: 'bi bi-globe' },
-      { value: 'bi bi-joystick' },
+      // Income related icons
+      { value: 'fa-solid fa-sack-dollar' }, // ถุงเงิน
+      { value: 'fa-solid fa-money-bill-trend-up' }, // แนวโน้มเงินขึ้น
+      { value: 'fa-solid fa-coins' }, // เหรียญ
+      { value: 'fa-solid fa-hand-holding-dollar' }, // มือถือเงิน
+      { value: 'fa-solid fa-money-bill-wave' }, // ธนบัตร
+      { value: 'fa-solid fa-piggy-bank' }, // กระปุกออมสิน
+      { value: 'fa-solid fa-credit-card' }, // บัตรเครดิต
+      { value: 'fa-solid fa-building-columns' }, // ธนาคาร
+      
+      // Expense related icons
+      { value: 'fa-solid fa-cart-shopping' }, // รถเข็นช้อปปิ้ง
+      { value: 'fa-solid fa-burger' }, // อาหาร
+      { value: 'fa-solid fa-house' }, // บ้าน
+      { value: 'fa-solid fa-car' }, // รถยนต์
+      { value: 'fa-solid fa-graduation-cap' }, // การศึกษา
+      { value: 'fa-solid fa-heart-pulse' }, // สุขภาพ
+      { value: 'fa-solid fa-plane' }, // ท่องเที่ยว
+      { value: 'fa-solid fa-shirt' }, // เสื้อผ้า
+      { value: 'fa-solid fa-dumbbell' }, // ออกกำลังกาย
+      { value: 'fa-solid fa-laptop' }, // อุปกรณ์อิเล็กทรอนิกส์
+      { value: 'fa-solid fa-gamepad' }, // เกม
+      { value: 'fa-solid fa-mobile-screen' }, // มือถือ
+      { value: 'fa-solid fa-wifi' }, // อินเตอร์เน็ต
+      { value: 'fa-solid fa-utensils' }, // ร้านอาหาร
+      { value: 'fa-solid fa-gift' }, // ของขวัญ
+      { value: 'fa-solid fa-palette' }, // งานอดิเรก
     ]
 
     const toggleSelectMode = () => {
@@ -507,6 +605,16 @@ export default {
       }
     }
 
+    // เพิ่มฟังก์ชัน showAddPocketModal
+    const showAddPocketModal = (type) => {
+      newPocketType.value = type
+      showModal.value = true
+      newPocket.value = {
+        name: '',
+        icon: 'fa-solid fa-wallet' // เปลี่ยนเป็น Font Awesome icon
+      }
+    }
+
     return {
       incomePockets,
       expensePockets,
@@ -536,7 +644,15 @@ export default {
       closeEditModal,
       updatePocket,
       deletePocket,
-      deleteSelectedPockets
+      deleteSelectedPockets,
+      selectedDate, // เพิ่ม selectedDate ใน return
+      itemsPerPage,
+      currentPage,
+      totalPages,
+      paginatedTransactions,
+      displayedPages,
+      changePage,
+      transactionsSection
     }
   }
 }
@@ -741,6 +857,61 @@ export default {
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
     gap: 0.5rem;
   }
+
+  /* Mobile styles for pocket cards */
+  .pocket-card {
+    position: relative;
+  }
+  
+  .pocket-actions {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 0.5rem;
+    opacity: 1;
+  }
+
+  .pocket-card:hover .pocket-actions {
+    opacity: 1;
+  }
+
+  .pocket-actions button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+  }
+}
+
+/* Pagination styles */
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  padding: 0.375rem 0.75rem;
+  color: var(--primary-color);
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+}
+
+.page-item.active .page-link {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.page-item.disabled .page-link {
+  color: var(--text-light);
+  pointer-events: none;
+  background-color: var(--white);
+  border-color: var(--border-color);
 }
 
 /* Animation */
@@ -772,5 +943,9 @@ export default {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.transaction-section {
+  scroll-margin-top: 20px; /* เพิ่ม margin ด้านบนเวลา scroll */
 }
 </style>

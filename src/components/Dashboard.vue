@@ -53,12 +53,10 @@
     <!-- Main Content Grid -->
     <div class="row g-4 mt-4">
       <!-- Calendar Column -->
-      <div class="col-12 col-md-6 col-lg-4 order-2 order-md-1">
-        <div class="card h-100">
+        <div class="col-12 col-lg-4 order-2 order-lg-1">
           <div class="card-body calendar-wrapper">
             <Calendar v-model:selectedDate="selectedDate" />
           </div>
-        </div>
       </div>
 
       <!-- Transaction Form Column -->

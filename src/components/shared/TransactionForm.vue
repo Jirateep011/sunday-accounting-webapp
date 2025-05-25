@@ -85,14 +85,11 @@ export default {
   setup(props) {
     const store = useStore()
 
-    // ย้ายฟังก์ชันมาไว้ด้านบนก่อนการใช้งาน
     const formatDateForInput = (date) => {
+      if (!date) return new Date().toISOString().split('T')[0]
       const d = new Date(date)
-      d.setHours(0, 0, 0, 0)
-      const year = d.getFullYear()
-      const month = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
+      if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0]
+      return d.toISOString().split('T')[0]
     }
 
     // ฟังก์ชันสำหรับแสดงผลวันที่แบบไทย
@@ -110,10 +107,7 @@ export default {
     const selectedPocketId = ref(props.editingTransaction?.pocketId || '')
     const amount = ref(props.editingTransaction?.amount || null)
     const description = ref(props.editingTransaction?.description || '')
-    const transactionDate = ref(
-      props.editingTransaction?.date ||
-      formatDateForInput(props.selectedDate) // ใช้ formatDateForInput ที่ประกาศแล้ว
-    )
+    const transactionDate = ref(formatDateForInput(props.selectedDate))
 
     const isEditing = computed(() => !!props.editingTransaction)
     const maxDate = new Date().toISOString().split('T')[0]
