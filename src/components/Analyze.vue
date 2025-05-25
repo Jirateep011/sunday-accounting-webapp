@@ -127,7 +127,7 @@
     <!-- Summary Cards -->
     <div class="row g-4 mt-3">
       <div class="col-12 col-md-4">
-        <div class="card summary-card income">
+        <div class="card summary-card income" role="button" @click="showTransactionDetails('income')">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
@@ -143,7 +143,7 @@
       </div>
 
       <div class="col-12 col-md-4">
-        <div class="card summary-card expense">
+        <div class="card summary-card expense" role="button" @click="showTransactionDetails('expense')">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
@@ -159,7 +159,7 @@
       </div>
 
       <div class="col-12 col-md-4">
-        <div class="card summary-card balance">
+        <div class="card summary-card balance" role="button" @click="showTransactionDetails('all')">
           <div class="card-body">
             <div class="d-flex align-items-center gap-3">
               <div class="icon-wrapper">
@@ -204,6 +204,57 @@
             <div v-else class="empty-state">
               <i class="bi bi-pie-chart"></i>
               <p>ไม่พบข้อมูลรายจ่ายในช่วงเวลาที่เลือก</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Details Section - แทนที่ modal เดิม -->
+    <div v-if="showDetails" class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="card-title mb-0">
+                {{ 
+                  selectedType === 'income' ? 'รายการรายรับ' : 
+                  selectedType === 'expense' ? 'รายการรายจ่าย' : 
+                  'รายการทั้งหมด'
+                }}
+                ประจำเดือน {{ months[selectedMonth] }} {{ selectedYear + 543 }}
+              </h5>
+              <button class="btn-close" @click="showDetails = false"></button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>ประเภท</th>
+                    <th>หมวดหมู่</th>
+                    <th>รายละเอียด</th>
+                    <th class="text-end">จำนวนเงิน</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in filteredTransactions" :key="item.id"
+                      :class="item.type === 'income' ? 'table-success' : 'table-danger'">
+                    <td>{{ formatDate(item.date) }}</td>
+                    <td>{{ item.type === 'income' ? 'รายรับ' : 'รายจ่าย' }}</td>
+                    <td>{{ getPocketName(item.pocketId, item.type) }}</td>
+                    <td>{{ item.description }}</td>
+                    <td class="text-end">{{ formatAmount(item.amount) }} ฿</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="table-light fw-bold">
+                    <td colspan="4" class="text-end">รวม</td>
+                    <td class="text-end">{{ formatAmount(totalAmount) }} ฿</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </div>
@@ -585,123 +636,113 @@ export default {
 
         const isMergeMode = result.isConfirmed
 
-        const reader = new FileReader()
-        reader.onload = async (e) => {
-          try {
-            const data = new Uint8Array(e.target.result)
-            const workbook = XLSX.read(data, { type: 'array' })
-            
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-            const jsonData = XLSX.utils.sheet_to_json(worksheet)
-            
-            if (jsonData.length === 0 || !jsonData[0].data) {
-              throw new Error('Invalid file format')
-            }
+        // อ่านไฟล์และแปลงเป็น ArrayBuffer
+        const arrayBuffer = await file.arrayBuffer()
+        
+        try {
+          // สร้าง workbook จาก ArrayBuffer
+          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' })
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+          const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
-            const importedData = JSON.parse(jsonData[0].data)
-
-            if (!importedData.income || !importedData.expenses || 
-                !importedData.incomePockets || !importedData.expensePockets) {
-              throw new Error('Invalid data structure')
-            }
-
-            if (isMergeMode) {
-              // โหมดเพิ่มข้อมูลใหม่
-              const mergedData = {
-                // รวมข้อมูลหมวดหมู่รายรับ โดยตรวจสอบชื่อที่ซ้ำกัน
-                incomePockets: [...new Map([
-                  ...store.state.incomePockets,
-                  ...importedData.incomePockets
-                ].map(item => [item.name, item])).values()],
-                
-                // รวมข้อมูลหมวดหมู่รายจ่าย โดยตรวจสอบชื่อที่ซ้ำกัน
-                expensePockets: [...new Map([
-                  ...store.state.expensePockets,
-                  ...importedData.expensePockets
-                ].map(item => [item.name, item])).values()],
-
-                // สร้าง mapping ระหว่าง pocketId เก่าและใหม่
-                income: (() => {
-                  // สร้าง Map เพื่อเก็บความสัมพันธ์ระหว่างชื่อหมวดหมู่และ ID ใหม่
-                  const pocketNameToIdMap = new Map(
-                    mergedData.incomePockets.map(pocket => [pocket.name, pocket.id])
-                  );
-
-                  // รวมข้อมูลรายรับเดิม
-                  const existingIncome = store.state.income.map(item => {
-                    const pocket = store.state.incomePockets.find(p => p.id === item.pocketId);
-                    return {
-                      ...item,
-                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
-                    };
-                  });
-
-                  // รวมข้อมูลรายรับใหม่
-                  const newIncome = importedData.income.map(item => {
-                    const pocket = importedData.incomePockets.find(p => p.id === item.pocketId);
-                    return {
-                      ...item,
-                      id: Date.now() + Math.random(),
-                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
-                    };
-                  });
-
-                  return [...existingIncome, ...newIncome];
-                })(),
-
-                // สร้าง mapping ระหว่าง pocketId เก่าและใหม่สำหรับรายจ่าย
-                expenses: (() => {
-                  const pocketNameToIdMap = new Map(
-                    mergedData.expensePockets.map(pocket => [pocket.name, pocket.id])
-                  );
-
-                  const existingExpenses = store.state.expenses.map(item => {
-                    const pocket = store.state.expensePockets.find(p => p.id === item.pocketId);
-                    return {
-                      ...item,
-                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
-                    };
-                  });
-
-                  const newExpenses = importedData.expenses.map(item => {
-                    const pocket = importedData.expensePockets.find(p => p.id === item.pocketId);
-                    return {
-                      ...item,
-                      id: Date.now() + Math.random(),
-                      pocketId: pocket ? pocketNameToIdMap.get(pocket.name) : item.pocketId
-                    };
-                  });
-
-                  return [...existingExpenses, ...newExpenses];
-                })()
-              };
-              
-              store.commit('importData', mergedData)
-            } else {
-              // โหมดแทนที่ข้อมูลทั้งหมด
-              store.commit('importData', importedData)
-            }
-
-            await Swal.fire({
-              icon: 'success',
-              title: 'นำเข้าข้อมูลสำเร็จ',
-              text: isMergeMode ? 'เพิ่มข้อมูลใหม่เรียบร้อยแล้ว' : 'แทนที่ข้อมูลทั้งหมดเรียบร้อยแล้ว',
-              confirmButtonText: 'ตกลง'
-            })
-
-            window.location.reload()
-
-          } catch (error) {
-            console.error('Import Error:', error)
-            await Swal.fire({
-              icon: 'error',
-              title: 'เกิดข้อผิดพลาด',
-              text: 'ไฟล์ไม่ถูกต้องหรือเสียหาย กรุณาตรวจสอบและลองใหม่อีกครั้ง'
-            })
+          if (jsonData.length === 0 || !jsonData[0].data) {
+            throw new Error('Invalid file format')
           }
+
+          const importedData = JSON.parse(jsonData[0].data)
+
+          if (!importedData.income || !importedData.expenses || 
+              !importedData.incomePockets || !importedData.expensePockets) {
+            throw new Error('Invalid data structure')
+          }
+
+          if (isMergeMode) {
+            // สร้าง Map เพื่อเก็บ pocket ที่ unique โดยใช้ชื่อเป็น key
+            const existingIncomePocketMap = new Map(
+              store.state.incomePockets.map(pocket => [pocket.name, pocket])
+            )
+            const existingExpensePocketMap = new Map(
+              store.state.expensePockets.map(pocket => [pocket.name, pocket])
+            )
+
+            // รวม pockets และสร้าง mapping สำหรับ ID เก่า -> ID ใหม่
+            const pocketIdMapping = new Map()
+
+            // จัดการ income pockets
+            importedData.incomePockets.forEach(importedPocket => {
+              const existingPocket = existingIncomePocketMap.get(importedPocket.name)
+              if (existingPocket) {
+                // ถ้ามี pocket ชื่อนี้อยู่แล้ว ให้ใช้ ID เดิม
+                pocketIdMapping.set(importedPocket.id, existingPocket.id)
+              } else {
+                // ถ้าไม่มี ให้เพิ่มเข้าไปใน Map
+                existingIncomePocketMap.set(importedPocket.name, importedPocket)
+              }
+            })
+
+            // จัดการ expense pockets
+            importedData.expensePockets.forEach(importedPocket => {
+              const existingPocket = existingExpensePocketMap.get(importedPocket.name)
+              if (existingPocket) {
+                // ถ้ามี pocket ชื่อนี้อยู่แล้ว ให้ใช้ ID เดิม
+                pocketIdMapping.set(importedPocket.id, existingPocket.id)
+              } else {
+                // ถ้าไม่มี ให้เพิ่มเข้าไปใน Map
+                existingExpensePocketMap.set(importedPocket.name, importedPocket)
+              }
+            })
+
+            // สร้างข้อมูลที่จะ merge
+            const mergedData = {
+              // แปลง Map กลับเป็น Array สำหรับ pockets
+              incomePockets: Array.from(existingIncomePocketMap.values()),
+              expensePockets: Array.from(existingExpensePocketMap.values()),
+
+              // รวมข้อมูลรายการเก่าและใหม่
+              income: [
+                ...store.state.income,
+                ...importedData.income.map(item => ({
+                  ...item,
+                  id: Date.now() + Math.random(), // สร้าง ID ใหม่
+                  // ถ้ามีการ map pocketId ใหม่ ให้ใช้ ID ใหม่ แต่ถ้าไม่มีให้ใช้ ID เดิม
+                  pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
+                }))
+              ],
+              expenses: [
+                ...store.state.expenses,
+                ...importedData.expenses.map(item => ({
+                  ...item,
+                  id: Date.now() + Math.random(), // สร้าง ID ใหม่
+                  // ถ้ามีการ map pocketId ใหม่ ให้ใช้ ID ใหม่ แต่ถ้าไม่มีให้ใช้ ID เดิม
+                  pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
+                }))
+              ]
+            }
+
+            store.commit('importData', mergedData)
+          } else {
+            // โหมดแทนที่ข้อมูลทั้งหมด
+            store.commit('importData', importedData)
+          }
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'นำเข้าข้อมูลสำเร็จ',
+            text: isMergeMode ? 'เพิ่มข้อมูลใหม่เรียบร้อยแล้ว' : 'แทนที่ข้อมูลทั้งหมดเรียบร้อยแล้ว',
+            confirmButtonText: 'ตกลง'
+          })
+
+          window.location.reload()
+
+        } catch (error) {
+          console.error('Import Error:', error)
+          await Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไฟล์ไม่ถูกต้องหรือเสียหาย กรุณาตรวจสอบและลองใหม่อีกครั้ง'
+          })
         }
 
-        reader.readAsArrayBuffer(file)
         event.target.value = ''
 
       } catch (error) {
@@ -730,6 +771,44 @@ export default {
       addThaiFonts()
     })
 
+    // เพิ่ม state สำหรับ transaction details
+    const showDetails = ref(false)
+    const selectedType = ref('all')
+
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString('th-TH')
+    }
+
+    const getPocketName = (pocketId, type) => {
+      const pockets = type === 'income' ? store.state.incomePockets : store.state.expensePockets
+      const pocket = pockets.find(p => p.id === pocketId)
+      return pocket?.name || 'ไม่ระบุหมวดหมู่'
+    }
+
+    const filteredTransactions = computed(() => {
+      let transactions = []
+      if (selectedType.value === 'income') {
+        transactions = filteredIncome.value
+      } else if (selectedType.value === 'expense') {
+        transactions = filteredExpenses.value
+      } else {
+        transactions = [...filteredIncome.value, ...filteredExpenses.value]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+      }
+      return transactions
+    })
+
+    const totalAmount = computed(() => {
+      if (selectedType.value === 'income') return totalIncome.value
+      if (selectedType.value === 'expense') return totalExpenses.value
+      return balance.value
+    })
+
+    const showTransactionDetails = (type) => {
+      selectedType.value = type
+      showDetails.value = true
+    }
+
     return {
       months,
       yearRange,
@@ -747,7 +826,14 @@ export default {
       exportToPDF,
       exportToDataExcel,
       exportToViewExcel,
-      handleFileImport
+      handleFileImport,
+      showDetails,
+      selectedType,
+      formatDate,
+      getPocketName,
+      filteredTransactions,
+      totalAmount,
+      showTransactionDetails
     }
   }
 }
@@ -839,6 +925,41 @@ export default {
 
 .form-check-label {
   cursor: pointer;
+}
+
+.summary-card {
+  cursor: pointer;
+}
+
+.table > :not(:first-child) {
+  border-top: none;
+}
+
+.table th {
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.btn-close {
+  padding: 0.5rem;
+}
+
+/* Animation for expanding details */
+.row {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Optional: Add some animation when showing/hiding the table */
+.row-enter-active,
+.row-leave-active {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.row-enter-from,
+.row-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 768px) {
