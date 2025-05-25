@@ -56,6 +56,7 @@ export default {
   --text-light: #636e72;
   --background-color: #f8f9fa;
   --white: #ffffff;
+  --sidebar-width: 250px;
 }
 
 body {
@@ -196,5 +197,11 @@ body {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0;
+  }
 }
 </style>

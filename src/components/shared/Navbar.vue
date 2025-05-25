@@ -1,19 +1,23 @@
 <template>
   <nav :class="['navbar', { 'navbar-mobile': isMobile }]">
     <div class="navbar-container">
+      <!-- Brand Section -->
       <div class="brand-section">
-        <div class="brand-content">
-          <div class="logo">💰</div>
-          <span class="brand-name">สมุดบัญชี</span>
-        </div>
+        <router-link to="/" class="brand-content">
+          <div class="logo-wrapper">
+            <div class="logo">💰</div>
+          </div>
+          <span class="brand-name">Keepi</span>
+        </router-link>
         <button v-if="isMobile" 
                 class="navbar-toggler" 
                 @click="toggleMenu"
                 :aria-expanded="isMenuOpen">
-          <i class="bi" :class="isMenuOpen ? 'bi-x' : 'bi-list'"></i>
+          <i class="bi" :class="isMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
         </button>
       </div>
 
+      <!-- Navigation Links -->
       <div :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
         <router-link 
           v-for="(item, index) in menuItems"
@@ -23,14 +27,16 @@
           active-class="active"
           @click="isMobile && (isMenuOpen = false)"
         >
-          <i :class="item.icon"></i>
-          <span>{{ item.label }}</span>
+          <div class="nav-icon">
+            <i :class="item.icon"></i>
+          </div>
+          <span class="nav-label">{{ item.label }}</span>
         </router-link>
       </div>
     </div>
   </nav>
 
-  <!-- Overlay for mobile -->
+  <!-- Mobile Overlay -->
   <div v-if="isMobile && isMenuOpen" 
        class="navbar-overlay"
        @click="isMenuOpen = false">
@@ -83,8 +89,8 @@ export default {
 
 <style scoped>
 .navbar {
-  background: var(--white);
-  border-right: 1px solid #eee;
+  background: var(--navbar-background-color);
+  border-right: 1px solid rgba(0,0,0,0.05);
   height: 100vh;
   width: var(--sidebar-width);
   position: fixed;
@@ -92,77 +98,127 @@ export default {
   left: 0;
   z-index: 1000;
   transition: all 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.02);
 }
 
 .navbar-mobile {
   width: 100%;
   height: var(--header-height);
   border-right: none;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .navbar-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .brand-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem;
-  height: var(--header-height);
+  margin-bottom: 2rem;
 }
 
 .brand-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+
+.brand-content:hover {
+  background: var(--primary-light);
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {
   font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--primary-light);
-  border-radius: 12px;
+  border-radius: 1rem;
+  transition: all 0.2s ease;
+}
+
+.brand-content:hover .logo {
+  transform: scale(1.05);
 }
 
 .brand-name {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--navbar-text-color);
 }
 
+/* Navigation Links */
 .nav-links {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 2rem;
+  gap: 0.75rem;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  color: var(--text-light);
+  padding: 0.875rem 1rem;
+  border-radius: 1rem;
+  color: var(--navbar-text-color);
   text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 0.75rem;
   transition: all 0.2s ease;
 }
 
-.nav-item:hover,
-.nav-item.active {
-  background: var(--primary-light);
-  color: var(--primary-color);
+.nav-label {
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
+.nav-item:hover {
+  background: var(--primary-light);
+  color: var(--navbar-text-color);
+}
+
+.nav-item:hover .nav-icon {
+  background: var(--white);
+  color: var(--navbar-text-color);
+}
+
+.nav-item.active {
+  background: var(--white);
+  color: #5B3A1B;
+}
+
+.nav-item.active .nav-icon {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Mobile Styling */
 .navbar-toggler {
   background: none;
   border: none;
@@ -172,11 +228,14 @@ export default {
   color: var(--text-color);
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navbar-toggler:hover {
   background: var(--primary-light);
-  color: var(--primary-color);
+  color: var(--navbar-text-color);
 }
 
 .navbar-overlay {
@@ -185,11 +244,28 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
   z-index: 999;
 }
 
 @media (max-width: 768px) {
+  .navbar {
+    width: 100%;
+    height: var(--header-height);
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .navbar-container {
+    padding: 0.5rem 1rem;
+  }
+
+  .brand-section {
+    margin-bottom: 0;
+  }
+
   .navbar-mobile .nav-links {
     display: none;
     position: fixed;
@@ -198,8 +274,9 @@ export default {
     right: 0;
     background: var(--white);
     padding: 1rem;
-    margin-top: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
 
   .navbar-mobile .nav-links.show {
@@ -207,7 +284,7 @@ export default {
   }
 
   .nav-item {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
   }
 }
 </style>
