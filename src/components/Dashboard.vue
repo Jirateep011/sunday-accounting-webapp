@@ -124,10 +124,11 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import Calendar from './shared/Calendar.vue'
 import TransactionForm from './shared/TransactionForm.vue'
+import Swal from 'sweetalert2'
 
 export default {
   name: 'Dashboard',
@@ -226,6 +227,43 @@ export default {
       ]
       const today = new Date()
       return days[today.getDay()]
+    })
+
+    onMounted(async () => {
+      // First notification for category reminder
+      await Swal.fire({
+        title: 'เริ่มต้นใช้งาน',
+        text: 'อย่าลืมสร้างหมวดหมู่รายรับ-รายจ่ายก่อนเริ่มใช้งานนะคะ',
+        icon: 'info',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#6c5ce7',
+        showCancelButton: true,
+        cancelButtonText: 'ไม่ต้องเตือนอีก',
+        footer: '<a href="/cloudpocket">ไปที่หน้าหมวดหมู่</a>'
+      }).then((result) => {
+        if (result.isDismissed) {
+          localStorage.setItem('suppressCategoryReminder', 'true')
+        }
+      })
+
+      // Second notification for backup reminder
+      if (!localStorage.getItem('lastBackupReminder') || 
+          Date.now() - parseInt(localStorage.getItem('lastBackupReminder')) > 7 * 24 * 60 * 60 * 1000) {
+        await Swal.fire({
+          title: 'สำรองข้อมูล',
+          text: 'อย่าลืมดาวน์โหลดไฟล์สำรองข้อมูลเพื่อป้องกันข้อมูลสูญหายนะคะ',
+          icon: 'warning',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#6c5ce7',
+          showCancelButton: true,
+          cancelButtonText: 'เตือนอีก 7 วัน',
+          footer: '<a href="/analyze">ไปที่หน้าดาวน์โหลดข้อมูล</a>'
+        }).then((result) => {
+          if (result.isDismissed) {
+            localStorage.setItem('lastBackupReminder', Date.now().toString())
+          }
+        })
+      }
     })
 
     return {
