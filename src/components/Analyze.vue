@@ -741,28 +741,50 @@ export default {
 
             // สร้างข้อมูลที่จะ merge
             const mergedData = {
-              // แปลง Map กลับเป็น Array สำหรับ pockets
+              // รวม pockets ตามที่ทำอยู่เดิม
               incomePockets: Array.from(existingIncomePocketMap.values()),
               expensePockets: Array.from(existingExpensePocketMap.values()),
 
-              // รวมข้อมูลรายการเก่าและใหม่
+              // แก้ไขการรวมรายการ income
               income: [
                 ...store.state.income,
-                ...importedData.income.map(item => ({
-                  ...item,
-                  id: Date.now() + Math.random(), // สร้าง ID ใหม่
-                  // ถ้ามีการ map pocketId ใหม่ ให้ใช้ ID ใหม่ แต่ถ้าไม่มีให้ใช้ ID เดิม
-                  pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
-                }))
+                ...importedData.income
+                  .filter(newItem => {
+                    // ตรวจสอบว่ามีรายการที่ซ้ำกันหรือไม่
+                    const isDuplicate = store.state.income.some(existingItem => 
+                      existingItem.date === newItem.date &&
+                      existingItem.description === newItem.description &&
+                      existingItem.amount === newItem.amount &&
+                      existingItem.pocketId === (pocketIdMapping.get(newItem.pocketId) || newItem.pocketId)
+                    );
+                    return !isDuplicate; // เก็บเฉพาะรายการที่ไม่ซ้ำ
+                  })
+                  .map(item => ({
+                    ...item,
+                    id: Date.now() + Math.random(),
+                    pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
+                  }))
               ],
+
+              // แก้ไขการรวมรายการ expenses
               expenses: [
                 ...store.state.expenses,
-                ...importedData.expenses.map(item => ({
-                  ...item,
-                  id: Date.now() + Math.random(), // สร้าง ID ใหม่
-                  // ถ้ามีการ map pocketId ใหม่ ให้ใช้ ID ใหม่ แต่ถ้าไม่มีให้ใช้ ID เดิม
-                  pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
-                }))
+                ...importedData.expenses
+                  .filter(newItem => {
+                    // ตรวจสอบว่ามีรายการที่ซ้ำกันหรือไม่
+                    const isDuplicate = store.state.expenses.some(existingItem =>
+                      existingItem.date === newItem.date &&
+                      existingItem.description === newItem.description &&
+                      existingItem.amount === newItem.amount &&
+                      existingItem.pocketId === (pocketIdMapping.get(newItem.pocketId) || newItem.pocketId)
+                    );
+                    return !isDuplicate; // เก็บเฉพาะรายการที่ไม่ซ้ำ
+                  })
+                  .map(item => ({
+                    ...item,
+                    id: Date.now() + Math.random(),
+                    pocketId: pocketIdMapping.get(item.pocketId) || item.pocketId
+                  }))
               ]
             }
 
