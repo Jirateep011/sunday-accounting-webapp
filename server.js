@@ -5,6 +5,8 @@ require('dotenv').config();
 
 const Income = require('./src/models/Income');
 const Expense = require('./src/models/Expense');
+const authController = require('./src/controllers/authController');
+const auth = require('./src/middleware/auth');
 
 const app = express();
 
@@ -16,6 +18,13 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('Could not connect to MongoDB:', err));
+
+// Auth Routes
+app.post('/api/auth/register', authController.register);
+app.post('/api/auth/login', authController.login);
+
+// Protected Routes - require authentication
+app.use(['/api/income', '/api/expenses'], auth);
 
 // Routes
 // Get all income

@@ -6,6 +6,8 @@ const API_URL = 'http://localhost:5000/api'
 export default createStore({
   state() {
     return {
+      user: JSON.parse(localStorage.getItem('user')) || null,
+      token: localStorage.getItem('token') || null,
       income: [],
       expenses: [],
       incomePockets: [],
@@ -13,6 +15,26 @@ export default createStore({
     }
   },
   mutations: {
+    setUser(state, user) {
+      state.user = user
+      localStorage.setItem('user', JSON.stringify(user))
+    },
+    setToken(state, token) {
+      state.token = token
+      localStorage.setItem('token', token)
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      } else {
+        delete axios.defaults.headers.common['Authorization']
+      }
+    },
+    clearAuth(state) {
+      state.user = null
+      state.token = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      delete axios.defaults.headers.common['Authorization']
+    },
     setIncome(state, income) {
       state.income = income
     },
@@ -49,6 +71,32 @@ export default createStore({
     }
   },
   actions: {
+    async register({ commit }, credentials) {
+      try {
+        const response = await axios.post(`${API_URL}/auth/register`, credentials)
+        const { user, token } = response.data.data
+        commit('setUser', user)
+        commit('setToken', token)
+        return user
+      } catch (error) {
+        throw new Error(error.response?.data?.error || 'Registration failed')
+      }
+    },
+    async login({ commit }, credentials) {
+      try {
+        const response = await axios.post(`${API_URL}/auth/login`, credentials)
+        const { user, token } = response.data.data
+        commit('setUser', user)
+        commit('setToken', token)
+        return user
+      } catch (error) {
+        throw new Error(error.response?.data?.error || 'Login failed')
+      }
+    },
+    logout({ commit }) {
+      commit('clearAuth')
+      commit('clearTransactions')
+    },
     async fetchIncome({ commit }) {
       try {
         const response = await axios.get(`${API_URL}/income`)
@@ -115,6 +163,8 @@ export default createStore({
     }
   },
   getters: {
+    isAuthenticated: state => !!state.token,
+    currentUser: state => state.user,
     totalIncome: (state) => {
       return state.income.reduce((total, entry) => total + Number(entry.amount), 0)
     },

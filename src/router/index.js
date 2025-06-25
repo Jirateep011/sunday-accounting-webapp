@@ -1,41 +1,77 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import store from '../store'
 import Dashboard from '../components/Dashboard.vue'
 import Income from '../components/Income.vue'
 import Expenses from '../components/Expenses.vue'
-import CloudPocket from '../components/CloudPocket.vue'
 import Analyze from '../components/Analyze.vue'
+import CloudPocket from '../components/CloudPocket.vue'
+import Login from '../components/auth/Login.vue'
+import Register from '../components/auth/Register.vue'
 
 const routes = [
   {
     path: '/',
+    redirect: '/dashboard'
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/dashboard',
     name: 'Dashboard',
-    component: Dashboard
+    component: Dashboard,
+    meta: { requiresAuth: true }
   },
   {
     path: '/income',
     name: 'Income',
-    component: Income
+    component: Income,
+    meta: { requiresAuth: true }
   },
   {
     path: '/expenses',
     name: 'Expenses',
-    component: Expenses
-  },
-  {
-    path: '/cloudpocket',
-    name: 'CloudPocket',
-    component: CloudPocket
+    component: Expenses,
+    meta: { requiresAuth: true }
   },
   {
     path: '/analyze',
     name: 'Analyze',
-    component: Analyze
+    component: Analyze,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/cloud-pocket',
+    name: 'CloudPocket',
+    component: CloudPocket,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = store.getters.isAuthenticated
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+  } else if (to.meta.requiresGuest && isAuthenticated) {
+    next('/dashboard')
+  } else {
+    next()
+  }
 })
 
 export default router

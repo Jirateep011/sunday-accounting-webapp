@@ -245,25 +245,6 @@ export default {
           localStorage.setItem('suppressCategoryReminder', 'true')
         }
       })
-
-      // Second notification for backup reminder
-      if (!localStorage.getItem('lastBackupReminder') || 
-          Date.now() - parseInt(localStorage.getItem('lastBackupReminder')) > 7 * 24 * 60 * 60 * 1000) {
-        await Swal.fire({
-          title: 'สำรองข้อมูล',
-          text: 'อย่าลืมดาวน์โหลดไฟล์สำรองข้อมูลเพื่อป้องกันข้อมูลสูญหายนะคะ',
-          icon: 'warning',
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#6c5ce7',
-          showCancelButton: true,
-          cancelButtonText: 'เตือนอีก 7 วัน',
-          footer: '<a href="/analyze">ไปที่หน้าดาวน์โหลดข้อมูล</a>'
-        }).then((result) => {
-          if (result.isDismissed) {
-            localStorage.setItem('lastBackupReminder', Date.now().toString())
-          }
-        })
-      }
     })
 
     return {

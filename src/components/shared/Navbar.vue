@@ -4,9 +4,9 @@
       <!-- Brand Section -->
       <div class="brand-section">
         <router-link to="/" class="brand-content">
-          <div class="logo-wrapper">
+          <!-- <div class="logo-wrapper">
             <div class="logo">💰</div>
-          </div>
+          </div> -->
           <span class="brand-name">Keepi</span>
         </router-link>
         <button v-if="isMobile" 
@@ -18,19 +18,47 @@
       </div>
 
       <!-- Navigation Links -->
-      <div :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
-        <router-link 
-          v-for="(item, index) in menuItems"
-          :key="index"
-          :to="item.path"
-          class="nav-item"
-          active-class="active"
-          @click="isMobile && (isMenuOpen = false)"
-        >
-          <div class="nav-icon">
-            <i :class="item.icon"></i>
-          </div>
-          <span class="nav-label">{{ item.label }}</span>
+      <div v-if="isAuthenticated" :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
+        <router-link to="/dashboard" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-home"></i>
+          <span class="nav-label">หน้าหลัก</span>
+        </router-link>
+        
+        <router-link to="/income" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-plus-circle"></i>
+          <span class="nav-label">รายรับ</span>
+        </router-link>
+
+        <router-link to="/expenses" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-minus-circle"></i>
+          <span class="nav-label">รายจ่าย</span>
+        </router-link>
+
+        <router-link to="/analyze" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-chart-line"></i>
+          <span class="nav-label">วิเคราะห์</span>
+        </router-link>
+
+        <router-link to="/cloud-pocket" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-cloud"></i>
+          <span class="nav-label">Cloud Pocket</span>
+        </router-link>
+
+        <div class="nav-item" @click="handleLogout">
+          <i class="nav-icon fas fa-sign-out-alt"></i>
+          <span class="nav-label">ออกจากระบบ</span>
+        </div>
+      </div>
+
+      <div v-else :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
+        <router-link to="/login" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-sign-in-alt"></i>
+          <span class="nav-label">เข้าสู่ระบบ</span>
+        </router-link>
+
+        <router-link to="/register" class="nav-item" active-class="active">
+          <i class="nav-icon fas fa-user-plus"></i>
+          <span class="nav-label">สมัครสมาชิก</span>
         </router-link>
       </div>
     </div>
@@ -44,11 +72,16 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'Navbar',
   setup() {
+    const store = useStore()
+    const router = useRouter()
+
     const isMobile = ref(false)
     const isMenuOpen = ref(false)
 
@@ -60,12 +93,20 @@ export default {
       { path: '/analyze', label: 'วิเคราะห์', icon: 'bi bi-bar-chart' }
     ]
 
+    const isAuthenticated = computed(() => store.getters.isAuthenticated)
+    const currentUser = computed(() => store.getters.currentUser)
+
     const checkMobile = () => {
       isMobile.value = window.innerWidth < 768
     }
 
     const toggleMenu = () => {
       isMenuOpen.value = !isMenuOpen.value
+    }
+
+    const handleLogout = async () => {
+      await store.dispatch('logout')
+      router.push('/login')
     }
 
     onMounted(() => {
@@ -81,7 +122,10 @@ export default {
       isMobile,
       isMenuOpen,
       toggleMenu,
-      menuItems
+      menuItems,
+      isAuthenticated,
+      currentUser,
+      handleLogout
     }
   }
 }
