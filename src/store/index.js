@@ -1,141 +1,117 @@
 import { createStore } from 'vuex'
+import axios from 'axios'
 
-// ฟังก์ชันสำหรับโหลดข้อมูลจาก Local Storage
-const loadState = () => {
-  try {
-    const income = localStorage.getItem('income')
-    const expenses = localStorage.getItem('expenses')
-    const incomePockets = localStorage.getItem('incomePockets')
-    const expensePockets = localStorage.getItem('expensePockets')
-    
-    return {
-      income: income ? JSON.parse(income) : [],
-      expenses: expenses ? JSON.parse(expenses) : [],
-      // เปลี่ยนค่าเริ่มต้นของ pockets เป็น array ว่าง
-      incomePockets: incomePockets ? JSON.parse(incomePockets) : [],
-      expensePockets: expensePockets ? JSON.parse(expensePockets) : []
-    }
-  } catch (error) {
-    console.error('Error loading state from localStorage:', error)
+const API_URL = 'http://localhost:5000/api'
+
+export default createStore({
+  state() {
     return {
       income: [],
       expenses: [],
       incomePockets: [],
       expensePockets: []
     }
-  }
-}
-
-// ฟังก์ชันสำหรับบันทึกข้อมูลลง Local Storage
-const saveState = (state) => {
-  try {
-    localStorage.setItem('income', JSON.stringify(state.income))
-    localStorage.setItem('expenses', JSON.stringify(state.expenses))
-    localStorage.setItem('incomePockets', JSON.stringify(state.incomePockets))
-    localStorage.setItem('expensePockets', JSON.stringify(state.expensePockets))
-  } catch (error) {
-    console.error('Error saving state to localStorage:', error)
-  }
-}
-
-export default createStore({
-  state() {
-    const loadedState = loadState()
-    return {
-      income: loadedState.income,
-      expenses: loadedState.expenses,
-      incomePockets: loadedState.incomePockets,
-      expensePockets: loadedState.expensePockets
-    }
   },
   mutations: {
+    setIncome(state, income) {
+      state.income = income
+    },
+    setExpenses(state, expenses) {
+      state.expenses = expenses
+    },
     addIncome(state, incomeEntry) {
       state.income.push(incomeEntry)
-      saveState(state) // บันทึกข้อมูลทุกครั้งที่มีการเพิ่มรายรับ
     },
     addExpense(state, expenseEntry) {
       state.expenses.push(expenseEntry)
-      saveState(state) // บันทึกข้อมูลทุกครั้งที่มีการเพิ่มรายจ่าย
+    },
+    deleteIncome(state, id) {
+      state.income = state.income.filter(item => item._id !== id)
+    },
+    deleteExpense(state, id) {
+      state.expenses = state.expenses.filter(item => item._id !== id)
+    },
+    updateIncome(state, updatedIncome) {
+      const index = state.income.findIndex(item => item._id === updatedIncome._id)
+      if (index !== -1) {
+        state.income.splice(index, 1, updatedIncome)
+      }
+    },
+    updateExpense(state, updatedExpense) {
+      const index = state.expenses.findIndex(item => item._id === updatedExpense._id)
+      if (index !== -1) {
+        state.expenses.splice(index, 1, updatedExpense)
+      }
     },
     clearTransactions(state) {
       state.income = []
       state.expenses = []
-      saveState(state) // บันทึกข้อมูลเมื่อล้างรายการ
-    },
-    addIncomePocket(state, pocket) {
-      state.incomePockets.push(pocket)
-      saveState(state)
-    },
-    addExpensePocket(state, pocket) {
-      state.expensePockets.push(pocket)
-      saveState(state)
-    },
-    updatePocket(state, { type, pocket }) {
-      const pockets = type === 'income' ? state.incomePockets : state.expensePockets
-      const index = pockets.findIndex(p => p.id === pocket.id)
-      if (index !== -1) {
-        pockets[index] = { ...pocket }
-        saveState(state)
-      }
-    },
-    deleteTransactionsByPocketId(state, { type, pocketId }) {
-      // ลบรายการที่เกี่ยวข้องกับ pocket
-      state[type] = state[type].filter(item => item.pocketId !== pocketId)
-      saveState(state)
-    },
-    deletePocket(state, { type, pocketId }) {
-      const pockets = type === 'income' ? state.incomePockets : state.expensePockets
-      const index = pockets.findIndex(p => p.id === pocketId)
-      if (index !== -1) {
-        pockets.splice(index, 1)
-        saveState(state)
-      }
-    },
-    updateTransaction(state, { type, transaction }) {
-      const transactions = state[type]
-      const index = transactions.findIndex(t => t.id === transaction.id)
-      if (index !== -1) {
-        transactions[index] = transaction
-        saveState(state)
-      }
-    },
-
-    deleteTransaction(state, { type, id }) {
-      state[type] = state[type].filter(t => t.id !== id)
-      saveState(state)
-    },
-
-    importData(state, importedData) {
-      state.income = importedData.income
-      state.expenses = importedData.expenses
-      state.incomePockets = importedData.incomePockets
-      state.expensePockets = importedData.expensePockets
-      saveState(state)
     }
   },
   actions: {
-    addIncome({ commit }, incomeEntry) {
-      commit('addIncome', incomeEntry)
+    async fetchIncome({ commit }) {
+      try {
+        const response = await axios.get(`${API_URL}/income`)
+        commit('setIncome', response.data)
+      } catch (error) {
+        console.error('Error fetching income:', error)
+      }
     },
-    addExpense({ commit }, expenseEntry) {
-      commit('addExpense', expenseEntry)
+    async fetchExpenses({ commit }) {
+      try {
+        const response = await axios.get(`${API_URL}/expenses`)
+        commit('setExpenses', response.data)
+      } catch (error) {
+        console.error('Error fetching expenses:', error)
+      }
     },
-    clearTransactions({ commit }) {
-      commit('clearTransactions')
+    async addIncome({ commit }, incomeEntry) {
+      try {
+        const response = await axios.post(`${API_URL}/income`, incomeEntry)
+        commit('addIncome', response.data)
+      } catch (error) {
+        console.error('Error adding income:', error)
+      }
     },
-    addIncomePocket({ commit }, pocket) {
-      commit('addIncomePocket', pocket)
+    async addExpense({ commit }, expenseEntry) {
+      try {
+        const response = await axios.post(`${API_URL}/expenses`, expenseEntry)
+        commit('addExpense', response.data)
+      } catch (error) {
+        console.error('Error adding expense:', error)
+      }
     },
-    addExpensePocket({ commit }, pocket) {
-      commit('addExpensePocket', pocket)
+    async deleteIncome({ commit }, id) {
+      try {
+        await axios.delete(`${API_URL}/income/${id}`)
+        commit('deleteIncome', id)
+      } catch (error) {
+        console.error('Error deleting income:', error)
+      }
     },
-    updateTransaction({ commit }, transaction) {
-      const type = transaction.type === 'income' ? 'income' : 'expenses'
-      commit('updateTransaction', { type, transaction })
+    async deleteExpense({ commit }, id) {
+      try {
+        await axios.delete(`${API_URL}/expenses/${id}`)
+        commit('deleteExpense', id)
+      } catch (error) {
+        console.error('Error deleting expense:', error)
+      }
     },
-
-    deleteTransaction({ commit }, { type, id }) {
-      commit('deleteTransaction', { type, id })
+    async updateIncome({ commit }, income) {
+      try {
+        const response = await axios.put(`${API_URL}/income/${income._id}`, income)
+        commit('updateIncome', response.data)
+      } catch (error) {
+        console.error('Error updating income:', error)
+      }
+    },
+    async updateExpense({ commit }, expense) {
+      try {
+        const response = await axios.put(`${API_URL}/expenses/${expense._id}`, expense)
+        commit('updateExpense', response.data)
+      } catch (error) {
+        console.error('Error updating expense:', error)
+      }
     }
   },
   getters: {
@@ -147,8 +123,6 @@ export default createStore({
     },
     balance: (state, getters) => {
       return getters.totalIncome - getters.totalExpenses
-    },
-    getIncomePockets: state => state.incomePockets,
-    getExpensePockets: state => state.expensePockets
+    }
   }
 })
