@@ -14,6 +14,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Routes
+const pocketRoutes = require('./src/routes/pockets');
+const incomeRoutes = require('./src/routes/income');
+const expenseRoutes = require('./src/routes/expenses');
+
+app.use('/api/pockets', pocketRoutes);
+app.use('/api/income', incomeRoutes);
+app.use('/api/expenses', expenseRoutes);
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
@@ -24,74 +33,7 @@ app.post('/api/auth/register', authController.register);
 app.post('/api/auth/login', authController.login);
 
 // Protected Routes - require authentication
-app.use(['/api/income', '/api/expenses'], auth);
-
-// Routes
-// Get all income
-app.get('/api/income', async (req, res) => {
-  try {
-    const income = await Income.find();
-    res.json(income);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Add new income
-app.post('/api/income', async (req, res) => {
-  const income = new Income({
-    amount: req.body.amount,
-    description: req.body.description,
-    date: req.body.date,
-    pocketId: req.body.pocketId
-  });
-
-  try {
-    const newIncome = await income.save();
-    res.status(201).json(newIncome);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// Get all expenses
-app.get('/api/expenses', async (req, res) => {
-  try {
-    const expenses = await Expense.find();
-    res.json(expenses);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Add new expense
-app.post('/api/expenses', async (req, res) => {
-  const expense = new Expense({
-    amount: req.body.amount,
-    description: req.body.description,
-    date: req.body.date,
-    pocketId: req.body.pocketId
-  });
-
-  try {
-    const newExpense = await expense.save();
-    res.status(201).json(newExpense);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// Delete income
-app.delete('/api/income/:id', async (req, res) => {
-  try {
-    await Income.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Income deleted' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Delete expense
+app.use(['/api/income', '/api/expenses', '/api/pockets'], auth);
 app.delete('/api/expenses/:id', async (req, res) => {
   try {
     await Expense.findByIdAndDelete(req.params.id);

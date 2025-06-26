@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { useStore } from 'vuex'
 
@@ -84,6 +84,26 @@ export default {
   },
   setup(props) {
     const store = useStore()
+
+    // เพิ่มฟังก์ชันโหลด pockets
+    const loadPockets = async () => {
+      try {
+        await store.dispatch('fetchPockets')
+      } catch (error) {
+        console.error('Error loading pockets:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถโหลดหมวดหมู่ได้ กรุณาลองใหม่อีกครั้ง',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#6c5ce7'
+        })
+      }
+    }
+
+    onMounted(() => {
+      loadPockets()
+    })
 
     const formatDateForInput = (date) => {
       if (!date) return new Date().toISOString().split('T')[0]

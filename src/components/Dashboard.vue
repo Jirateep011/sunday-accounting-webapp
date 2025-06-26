@@ -140,6 +140,7 @@ export default {
     const store = useStore()
     const selectedDate = ref(new Date())
     const activeTab = ref('income')
+    const selectedPocket = ref(null)
     
     const isInSelectedMonth = (date) => {
       const transactionDate = new Date(date)
@@ -182,18 +183,43 @@ export default {
         .slice(0, 5)
     })
 
-    const handleTransaction = (transaction) => {
-      if (transaction.type === 'income') {
-        store.dispatch('addIncome', {
-          ...transaction,
-          id: Date.now(),
-          date: new Date().toISOString()
+    const handleTransaction = async (transaction) => {
+      try {
+        if (!selectedPocket.value) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please select a pocket first'
+          })
+          return
+        }
+
+        const newTransaction = {
+          amount: Number(transaction.amount),
+          description: transaction.description,
+          date: transaction.date || new Date().toISOString(),
+          pocketId: selectedPocket.value._id // Using MongoDB _id
+        }
+
+        // Using store actions that connect to MongoDB
+        if (transaction.type === 'income') {
+          await store.dispatch('addIncome', newTransaction)
+        } else {
+          await store.dispatch('addExpense', newTransaction)
+        }
+
+        // Show success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Transaction added successfully'
         })
-      } else {
-        store.dispatch('addExpense', {
-          ...transaction,
-          id: Date.now(),
-          date: new Date().toISOString()
+      } catch (error) {
+        console.error('Error adding transaction:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to add transaction'
         })
       }
     }
@@ -261,7 +287,8 @@ export default {
       activeTab,
       formatDate,
       greeting,
-      currentDay
+      currentDay,
+      selectedPocket
     }
   }
 }

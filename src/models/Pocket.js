@@ -1,31 +1,30 @@
 const mongoose = require('mongoose');
 
-const incomeSchema = new mongoose.Schema({
-  amount: {
-    type: Number,
-    required: true
-  },
-  description: {
+const pocketSchema = new mongoose.Schema({
+  name: {
     type: String,
     required: true
   },
-  date: {
-    type: Date,
+  type: {
+    type: String,
+    enum: ['income', 'expense'],
     required: true
   },
-  pocketId: {
+  icon: {
     type: String,
-    required: false
+    required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-    createdByEmail: {
+  createdByEmail: {
     type: String,
     required: true
   }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Income', incomeSchema);
+module.exports = mongoose.model('Pocket', pocketSchema);

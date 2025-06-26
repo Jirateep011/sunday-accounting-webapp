@@ -16,6 +16,15 @@ const expenseSchema = new mongoose.Schema({
   pocketId: {
     type: String,
     required: false
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+    createdByEmail: {
+    type: String,
+    required: true
   }
 });
 

@@ -326,8 +326,8 @@ export default {
     // เพิ่ม selectedDate
     const selectedDate = ref(new Date())
 
-    const incomePockets = computed(() => store.getters.getIncomePockets)
-    const expensePockets = computed(() => store.getters.getExpensePockets)
+    const incomePockets = computed(() => store.getters.incomePockets)
+    const expensePockets = computed(() => store.getters.expensePockets)
 
     const itemsPerPage = ref(10)
     const currentPage = ref(1)
@@ -401,20 +401,30 @@ export default {
       }
     }
 
-    const addNewPocket = () => {
-      const pocket = {
-        id: Date.now(),
-        name: newPocket.value.name,
-        icon: newPocket.value.icon
-      }
+    const addNewPocket = async () => {
+      try {
+        const pocket = {
+          name: newPocket.value.name,
+          icon: newPocket.value.icon,
+          type: newPocketType.value
+        }
 
-      if (newPocketType.value === 'income') {
-        store.dispatch('addIncomePocket', pocket)
-      } else {
-        store.dispatch('addExpensePocket', pocket)
-      }
+        await store.dispatch('createPocket', pocket)
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Pocket created successfully!'
+        })
 
-      closeModal()
+        closeModal()
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'Failed to create pocket'
+        })
+      }
     }
 
     const calculatePocketTotal = (pocketId, type) => {
@@ -534,27 +544,25 @@ export default {
       })
 
       if (result.isConfirmed) {
-        for (const pocket of selectedPockets.value) {
-          // ลบข้อมูลรายการที่เกี่ยวข้องกับหมวดหมู่นี้
-          if (pocket.type === 'income') {
-            store.commit('deleteTransactionsByPocketId', {
-              type: 'income',
-              pocketId: pocket.id
-            })
-          } else {
-            store.commit('deleteTransactionsByPocketId', {
-              type: 'expenses',
-              pocketId: pocket.id
-            })
+        try {
+          for (const pocket of selectedPockets.value) {
+            await store.dispatch('deletePocket', pocket._id)
           }
-          // ลบหมวดหมู่
-          store.commit('deletePocket', {
-            type: pocket.type,
-            pocketId: pocket.id
+          selectedPockets.value = []
+          isSelectMode.value = false
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Selected pockets deleted successfully!'
+          })
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to delete selected pockets'
           })
         }
-        selectedPockets.value = []
-        isSelectMode.value = false
       }
     }
 
@@ -570,16 +578,20 @@ export default {
       })
 
       if (result.isConfirmed) {
-        // ลบข้อมูลรายการที่เกี่ยวข้องกับหมวดหมู่นี้
-        store.commit('deleteTransactionsByPocketId', {
-          type: pocket.type === 'income' ? 'income' : 'expenses',
-          pocketId: pocket.id
-        })
-        // ลบหมวดหมู่
-        store.commit('deletePocket', {
-          type: pocket.type,
-          pocketId: pocket.id
-        })
+        try {
+          await store.dispatch('deletePocket', pocket._id)
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Pocket deleted successfully!'
+          })
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to delete pocket'
+          })
+        }
       }
     }
 
@@ -596,13 +608,29 @@ export default {
     }
 
     // แก้ไขฟังก์ชัน updatePocket
-    const updatePocket = () => {
+    const updatePocket = async () => {
       if (editingPocket.value) {
-        store.commit('updatePocket', {
-          type: editingPocket.value.type || 'income',
-          pocket: editingPocket.value
-        })
-        closeEditModal()
+        try {
+          await store.dispatch('updatePocket', {
+            id: editingPocket.value._id,
+            data: {
+              name: editingPocket.value.name,
+              icon: editingPocket.value.icon
+            }
+          })
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Pocket updated successfully!'
+          })
+          closeEditModal()
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to update pocket'
+          })
+        }
       }
     }
 
@@ -732,6 +760,13 @@ export default {
 <style scoped>
 .cloud-pocket {
   padding: 2rem;
+}
+
+.section-header {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .section-header {

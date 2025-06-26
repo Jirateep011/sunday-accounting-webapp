@@ -1,5 +1,6 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
+import PocketService from '../services/pocketService'
 
 const API_URL = 'http://localhost:5000/api'
 
@@ -11,7 +12,8 @@ export default createStore({
       income: [],
       expenses: [],
       incomePockets: [],
-      expensePockets: []
+      expensePockets: [],
+      pockets: []
     }
   },
   mutations: {
@@ -68,6 +70,21 @@ export default createStore({
     clearTransactions(state) {
       state.income = []
       state.expenses = []
+    },
+    setPockets(state, pockets) {
+      state.pockets = pockets
+    },
+    addPocket(state, pocket) {
+      state.pockets.push(pocket)
+    },
+    updatePocket(state, updatedPocket) {
+      const index = state.pockets.findIndex(p => p._id === updatedPocket._id)
+      if (index !== -1) {
+        state.pockets.splice(index, 1, updatedPocket)
+      }
+    },
+    deletePocket(state, pocketId) {
+      state.pockets = state.pockets.filter(p => p._id !== pocketId)
     }
   },
   actions: {
@@ -103,6 +120,7 @@ export default createStore({
         commit('setIncome', response.data)
       } catch (error) {
         console.error('Error fetching income:', error)
+        throw error
       }
     },
     async fetchExpenses({ commit }) {
@@ -111,22 +129,27 @@ export default createStore({
         commit('setExpenses', response.data)
       } catch (error) {
         console.error('Error fetching expenses:', error)
+        throw error
       }
     },
-    async addIncome({ commit }, incomeEntry) {
+    async addIncome({ commit }, incomeData) {
       try {
-        const response = await axios.post(`${API_URL}/income`, incomeEntry)
+        const response = await axios.post(`${API_URL}/income`, incomeData)
         commit('addIncome', response.data)
+        return response.data
       } catch (error) {
         console.error('Error adding income:', error)
+        throw error
       }
     },
-    async addExpense({ commit }, expenseEntry) {
+    async addExpense({ commit }, expenseData) {
       try {
-        const response = await axios.post(`${API_URL}/expenses`, expenseEntry)
+        const response = await axios.post(`${API_URL}/expenses`, expenseData)
         commit('addExpense', response.data)
+        return response.data
       } catch (error) {
         console.error('Error adding expense:', error)
+        throw error
       }
     },
     async deleteIncome({ commit }, id) {
@@ -145,20 +168,62 @@ export default createStore({
         console.error('Error deleting expense:', error)
       }
     },
-    async updateIncome({ commit }, income) {
+    async updateIncome({ commit }, { id, data }) {
       try {
-        const response = await axios.put(`${API_URL}/income/${income._id}`, income)
+        const response = await axios.put(`${API_URL}/income/${id}`, data)
         commit('updateIncome', response.data)
+        return response.data
       } catch (error) {
         console.error('Error updating income:', error)
+        throw error
       }
     },
-    async updateExpense({ commit }, expense) {
+    async updateExpense({ commit }, { id, data }) {
       try {
-        const response = await axios.put(`${API_URL}/expenses/${expense._id}`, expense)
+        const response = await axios.put(`${API_URL}/expenses/${id}`, data)
         commit('updateExpense', response.data)
+        return response.data
       } catch (error) {
         console.error('Error updating expense:', error)
+        throw error
+      }
+    },
+    async fetchPockets({ commit }) {
+      try {
+        const pockets = await PocketService.getAllPockets()
+        commit('setPockets', pockets)
+      } catch (error) {
+        console.error('Error fetching pockets:', error)
+        throw error
+      }
+    },
+    async createPocket({ commit }, pocketData) {
+      try {
+        const pocket = await PocketService.createPocket(pocketData)
+        commit('addPocket', pocket)
+        return pocket
+      } catch (error) {
+        console.error('Error creating pocket:', error)
+        throw error
+      }
+    },
+    async updatePocket({ commit }, { id, data }) {
+      try {
+        const pocket = await PocketService.updatePocket(id, data)
+        commit('updatePocket', pocket)
+        return pocket
+      } catch (error) {
+        console.error('Error updating pocket:', error)
+        throw error
+      }
+    },
+    async deletePocket({ commit }, id) {
+      try {
+        await PocketService.deletePocket(id)
+        commit('deletePocket', id)
+      } catch (error) {
+        console.error('Error deleting pocket:', error)
+        throw error
       }
     }
   },
@@ -173,6 +238,8 @@ export default createStore({
     },
     balance: (state, getters) => {
       return getters.totalIncome - getters.totalExpenses
-    }
+    },
+    incomePockets: state => state.pockets.filter(p => p.type === 'income'),
+    expensePockets: state => state.pockets.filter(p => p.type === 'expense')
   }
 })
