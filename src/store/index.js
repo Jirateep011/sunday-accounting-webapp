@@ -199,6 +199,9 @@ export default createStore({
         const { user, token } = response.data.data
         commit('setUser', user)
         commit('setToken', token)
+        // เพิ่มบันทึกเวลาหมดอายุ token (6 ชั่วโมง)
+        const expireAt = Date.now() + 6 * 60 * 60 * 1000
+        localStorage.setItem('token_expire_at', expireAt)
         return user
       } catch (error) {
         throw new Error(error.response?.data?.error || 'Registration failed')
@@ -210,6 +213,9 @@ export default createStore({
         const { user, token } = response.data.data
         commit('setUser', user)
         commit('setToken', token)
+        // เพิ่มบันทึกเวลาหมดอายุ token (6 ชั่วโมง)
+        const expireAt = Date.now() + 6 * 60 * 60 * 1000
+        localStorage.setItem('token_expire_at', expireAt)
         return user
       } catch (error) {
         throw new Error(error.response?.data?.error || 'Login failed')
@@ -218,6 +224,8 @@ export default createStore({
     logout({ commit }) {
       commit('clearAuth')
       commit('clearTransactions')
+      // ลบเวลาหมดอายุ token
+      localStorage.removeItem('token_expire_at')
     },
     async fetchPockets({ commit }) {
       try {

@@ -193,7 +193,6 @@ export default {
       const year = currentYear.value
       const month = currentMonth.value
       const firstDay = new Date(year, month, 1)
-      const lastDay = new Date(year, month + 1, 0)
       const startDate = new Date(firstDay)
       startDate.setDate(startDate.getDate() - firstDay.getDay())
 
@@ -202,9 +201,11 @@ export default {
       endDate.setDate(endDate.getDate() + 41) // 6 weeks
 
       for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        // สร้างวันที่แบบ UTC เพื่อป้องกัน timezone offset
+        const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
         days.push({
-          date: new Date(date),
-          currentMonth: date.getMonth() === month
+          date: new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()),
+          currentMonth: utcDate.getUTCMonth() === month
         })
       }
 
@@ -265,8 +266,10 @@ export default {
 
     const selectDate = (date) => {
       if (date > new Date()) return // Don't allow future dates
-      
-      transactionDate.value = formatDateForInput(date)
+      // สร้างวันที่ใหม่และเซ็ตเวลาเป็น 12:00:00 เพื่อป้องกัน timezone ลบวัน
+      const selected = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      selected.setHours(12, 0, 0, 0)
+      transactionDate.value = selected.toISOString().split('T')[0]
       closeDatePicker()
     }
 

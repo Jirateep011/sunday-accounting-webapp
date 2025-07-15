@@ -26,10 +26,6 @@
               <option value="100">100 รายการ</option>
             </select>
           </div>
-          <button class="btn btn-primary btn-sm" v-if="!isSelectMode" @click="showAddForm = !showAddForm">
-            <i class="bi" :class="showAddForm ? 'bi-x-lg' : 'bi-plus-lg'"></i>
-            {{ showAddForm ? 'ปิด' : 'เพิ่มรายการ' }}
-          </button>
         </div>
       </div>
     </div>
@@ -326,7 +322,7 @@ export default {
     })
 
     const getPocketName = (pocketId) => {
-      const pocket = store.state.incomePockets.find(p => p.id === pocketId)
+      const pocket = store.state.pockets.find(p => p._id === pocketId)
       return pocket?.name || 'ไม่ระบุหมวดหมู่'
     }
 

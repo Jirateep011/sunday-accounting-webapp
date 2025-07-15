@@ -19,27 +19,27 @@
 
       <!-- Navigation Links -->
       <div v-if="isAuthenticated" :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
-        <router-link to="/dashboard" class="nav-item" active-class="active">
+        <router-link to="/dashboard" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-home"></i>
           <span class="nav-label">หน้าหลัก</span>
         </router-link>
         
-        <router-link to="/income" class="nav-item" active-class="active">
+        <router-link to="/income" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-plus-circle"></i>
           <span class="nav-label">รายรับ</span>
         </router-link>
 
-        <router-link to="/expenses" class="nav-item" active-class="active">
+        <router-link to="/expenses" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-minus-circle"></i>
           <span class="nav-label">รายจ่าย</span>
         </router-link>
 
-        <router-link to="/analyze" class="nav-item" active-class="active">
+        <router-link to="/analyze" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-chart-line"></i>
           <span class="nav-label">วิเคราะห์</span>
         </router-link>
 
-        <router-link to="/cloudpocket" class="nav-item" active-class="active">
+        <router-link to="/cloudpocket" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-cloud"></i>
           <span class="nav-label">Cloud Pocket</span>
         </router-link>
@@ -51,12 +51,12 @@
       </div>
 
       <div v-else :class="['nav-links', { 'show': isMenuOpen || !isMobile }]">
-        <router-link to="/login" class="nav-item" active-class="active">
+        <router-link to="/login" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-sign-in-alt"></i>
           <span class="nav-label">เข้าสู่ระบบ</span>
         </router-link>
 
-        <router-link to="/register" class="nav-item" active-class="active">
+        <router-link to="/register" class="nav-item" active-class="active" @click="isMenuOpen = false">
           <i class="nav-icon fas fa-user-plus"></i>
           <span class="nav-label">สมัครสมาชิก</span>
         </router-link>
@@ -107,6 +107,7 @@ export default {
     const handleLogout = async () => {
       await store.dispatch('logout')
       router.push('/login')
+      isMenuOpen.value = false
     }
 
     onMounted(() => {

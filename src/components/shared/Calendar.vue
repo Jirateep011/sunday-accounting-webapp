@@ -159,46 +159,44 @@ export default {
       const month = currentDate.value.getMonth()
       const firstDay = new Date(year, month, 1)
       const lastDay = new Date(year, month + 1, 0)
-      
       const weeks = []
       let currentWeek = []
-      
       // Fill in leading empty days
       for (let i = 0; i < firstDay.getDay(); i++) {
         const prevMonth = new Date(year, month, 0)
         const prevMonthDay = prevMonth.getDate() - firstDay.getDay() + i + 1
+        // สร้างวันที่แบบ UTC
+        const utcDate = new Date(Date.UTC(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonthDay))
         currentWeek.push({
-          date: new Date(year, month - 1, prevMonthDay),
+          date: new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()),
           currentMonth: false
         })
       }
-      
       // Fill in days of current month
       for (let day = 1; day <= lastDay.getDate(); day++) {
+        const utcDate = new Date(Date.UTC(year, month, day))
         currentWeek.push({
-          date: new Date(year, month, day),
+          date: new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()),
           currentMonth: true
         })
-        
         if (currentWeek.length === 7) {
           weeks.push([...currentWeek])
           currentWeek = []
         }
       }
-      
       // Fill in trailing empty days
       if (currentWeek.length > 0) {
         const nextMonth = new Date(year, month + 1, 1)
         for (let i = 1; currentWeek.length < 7; i++) {
+          const utcDate = new Date(Date.UTC(nextMonth.getFullYear(), nextMonth.getMonth(), i))
           currentWeek.push({
-            date: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i),
+            date: new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()),
             currentMonth: false
           })
         }
         weeks.push([...currentWeek])
       }
-      
-      return weeks.flat() // Flatten the array of weeks
+      return weeks.flat()
     })
 
     // New computed properties for enhanced functionality
@@ -220,9 +218,9 @@ export default {
 
     const selectDate = (date) => {
       if (!date) return
-      const selectedDate = new Date(date)
-      // ปรับเวลาให้เป็น 00:00:00
-      selectedDate.setHours(0, 0, 0, 0)
+      // สร้างวันที่ใหม่และเซ็ตเวลาเป็น 12:00:00 เพื่อป้องกัน timezone ลบวัน
+      const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      selectedDate.setHours(12, 0, 0, 0)
       emit('update:selectedDate', selectedDate)
       emit('dateSelected', selectedDate)
     }

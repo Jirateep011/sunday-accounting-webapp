@@ -34,41 +34,36 @@
             </button>
             <ul class="dropdown-menu">
               <li class="dropdown-header">เลือกประเภทรายการ</li>
-              <li><hr class="dropdown-divider"></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
               <li>
                 <div class="px-3 py-2">
                   <div class="form-check mb-2">
-                    <input class="form-check-input" type="radio" 
-                           v-model="exportType" value="all" 
-                           id="exportAll">
+                    <input class="form-check-input" type="radio" v-model="exportType" value="all" id="exportAll">
                     <label class="form-check-label" for="exportAll">
                       ทั้งรายรับและรายจ่าย
                     </label>
                   </div>
                   <div class="form-check mb-2">
-                    <input class="form-check-input" type="radio" 
-                           v-model="exportType" value="income" 
-                           id="exportIncome">
+                    <input class="form-check-input" type="radio" v-model="exportType" value="income" id="exportIncome">
                     <label class="form-check-label" for="exportIncome">
                       รายรับ
                     </label>
                   </div>
                   <div class="form-check mb-3">
-                    <input class="form-check-input" type="radio" 
-                           v-model="exportType" value="expense" 
-                           id="exportExpense">
+                    <input class="form-check-input" type="radio" v-model="exportType" value="expense"
+                      id="exportExpense">
                     <label class="form-check-label" for="exportExpense">
                       รายจ่าย
                     </label>
                   </div>
                   <div class="d-grid gap-2">
-                    <button class="btn btn-sm btn-outline-success"
-                            @click="exportToViewExcel">
+                    <button class="btn btn-sm btn-outline-success" @click="exportToViewExcel">
                       <i class="bi bi-file-earmark-spreadsheet me-1"></i>
                       ดาวน์โหลดรายงาน Excel
                     </button>
-                    <button class="btn btn-sm btn-outline-primary"
-                            @click="exportToDataExcel">
+                    <button class="btn btn-sm btn-outline-primary" @click="exportToDataExcel">
                       <i class="bi bi-file-earmark-arrow-down me-1"></i>
                       ดาวน์โหลดข้อมูลเพื่อนำเข้าใหม่
                     </button>
@@ -174,10 +169,10 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-4">
               <h5 class="card-title mb-0">
-                {{ 
-                  selectedType === 'income' ? 'รายการรายรับ' : 
-                  selectedType === 'expense' ? 'รายการรายจ่าย' : 
-                  'รายการทั้งหมด'
+                {{
+                  selectedType === 'income' ? 'รายการรายรับ' :
+                    selectedType === 'expense' ? 'รายการรายจ่าย' :
+                      'รายการทั้งหมด'
                 }}
                 ประจำเดือน {{ months[selectedMonth] }} {{ selectedYear + 543 }}
               </h5>
@@ -188,19 +183,19 @@
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th @click="sort('date')" :class="{'sortable': true}">
+                    <th @click="sort('date')" :class="{ 'sortable': true }">
                       วันที่
                       <i v-if="getSortIcon('date')" :class="getSortIcon('date')"></i>
                     </th>
-                    <th @click="sort('type')" :class="{'sortable': true}">
+                    <th @click="sort('type')" :class="{ 'sortable': true }">
                       ประเภท
                       <i v-if="getSortIcon('type')" :class="getSortIcon('type')"></i>
                     </th>
-                    <th @click="sort('category')" :class="{'sortable': true}">
+                    <th @click="sort('category')" :class="{ 'sortable': true }">
                       หมวดหมู่
                       <i v-if="getSortIcon('category')" :class="getSortIcon('category')"></i>
                     </th>
-                    <th @click="sort('description')" :class="{'sortable': true}">
+                    <th @click="sort('description')" :class="{ 'sortable': true }">
                       รายละเอียด
                       <i v-if="getSortIcon('description')" :class="getSortIcon('description')"></i>
                     </th>
@@ -212,7 +207,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="item in paginatedData" :key="item.id"
-                      :class="item.type === 'income' ? 'table-success' : 'table-danger'">
+                    :class="item.type === 'income' ? 'table-success' : 'table-danger'">
                     <td>{{ formatDate(item.date) }}</td>
                     <td>{{ item.type === 'income' ? 'รายรับ' : 'รายจ่าย' }}</td>
                     <td>{{ getPocketName(item.pocketId, item.type) }}</td>
@@ -231,22 +226,17 @@
 
             <!-- Pagination Controls -->
             <div class="pagination-controls mt-3">
-              <button 
-                class="btn btn-outline-primary"
-                @click="currentPage = Math.max(1, currentPage - 1)"
-                :disabled="currentPage === 1"
-              >
+              <button class="btn btn-outline-primary" @click="currentPage = Math.max(1, currentPage - 1)"
+                :disabled="currentPage === 1">
                 <i class="fa-solid fa-chevron-left"></i>
                 ก่อนหน้า
               </button>
               <span class="current-page">
                 หน้า {{ currentPage }} / {{ Math.ceil(sortedData.length / itemsPerPage) }}
               </span>
-              <button 
-                class="btn btn-outline-primary"
+              <button class="btn btn-outline-primary"
                 @click="currentPage = Math.min(Math.ceil(sortedData.length / itemsPerPage), currentPage + 1)"
-                :disabled="currentPage === Math.ceil(sortedData.length / itemsPerPage)"
-              >
+                :disabled="currentPage === Math.ceil(sortedData.length / itemsPerPage)">
                 ถัดไป
                 <i class="fa-solid fa-chevron-right"></i>
               </button>
@@ -282,14 +272,14 @@ export default {
     const selectedType = ref('all')
 
     const months = [
-      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
       'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
       'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
     ]
 
     const currentYear = new Date().getFullYear()
     const yearRange = Array.from(
-      { length: 11 }, 
+      { length: 11 },
       (_, i) => currentYear - 5 + i
     )
 
@@ -301,7 +291,7 @@ export default {
       return store.state.income.filter(item => {
         const date = new Date(item.date)
         return date.getMonth() === selectedMonth.value &&
-               date.getFullYear() === selectedYear.value
+          date.getFullYear() === selectedYear.value
       })
     })
 
@@ -309,14 +299,14 @@ export default {
       return store.state.expenses.filter(item => {
         const date = new Date(item.date)
         return date.getMonth() === selectedMonth.value &&
-               date.getFullYear() === selectedYear.value
+          date.getFullYear() === selectedYear.value
       })
     })
 
     const incomeChartData = computed(() => {
       const data = {}
       filteredIncome.value.forEach(item => {
-        const pocket = store.getters.incomePockets.find(p => p._id === item.pocketId)
+        const pocket = store.state.pockets.find(p => p._id === item.pocketId)
         const category = pocket ? pocket.name : 'ไม่ระบุหมวดหมู่'
         data[category] = (data[category] || 0) + Number(item.amount)
       })
@@ -330,7 +320,7 @@ export default {
     const expenseChartData = computed(() => {
       const data = {}
       filteredExpenses.value.forEach(item => {
-        const pocket = store.getters.expensePockets.find(p => p._id === item.pocketId)
+        const pocket = store.state.pockets.find(p => p._id === item.pocketId)
         const category = pocket ? pocket.name : 'ไม่ระบุหมวดหมู่'
         data[category] = (data[category] || 0) + Number(item.amount)
       })
@@ -454,7 +444,7 @@ export default {
         data.income = filteredIncome.value.map(item => ({
           date: new Date(item.date).toLocaleDateString('th-TH'),
           type: 'รายรับ',
-          category: store.getters.incomePockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
+          category: store.state.pockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
           description: item.description,
           amount: Number(item.amount).toLocaleString('th-TH')
         }))
@@ -464,13 +454,13 @@ export default {
         data.expense = filteredExpenses.value.map(item => ({
           date: new Date(item.date).toLocaleDateString('th-TH'),
           type: 'รายจ่าย',
-          category: store.getters.expensePockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
+          category: store.state.pockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
           description: item.description,
           amount: Number(item.amount).toLocaleString('th-TH')
         }))
       }
 
-      return exportType.value === 'all' 
+      return exportType.value === 'all'
         ? [...data.income, ...data.expense]
         : data[exportType.value]
     }
@@ -479,10 +469,10 @@ export default {
     const exportToViewExcel = () => {
       try {
         const data = getExportData()
-        
+
         // สร้าง worksheet
         const ws = XLSX.utils.json_to_sheet(data)
-        
+
         // ปรับแต่งความกว้างคอลัมน์
         const wscols = [
           { wch: 12 }, // วันที่
@@ -495,7 +485,7 @@ export default {
 
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'รายงาน')
-        
+
         // บันทึกไฟล์
         XLSX.writeFile(wb, `รายงาน_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
       } catch (error) {
@@ -512,7 +502,7 @@ export default {
     const exportToDataExcel = () => {
       try {
         const data = []
-        
+
         if (exportType.value === 'all' || exportType.value === 'income') {
           filteredIncome.value.forEach(item => {
             data.push({
@@ -536,10 +526,10 @@ export default {
             })
           })
         }
-        
+
         // สร้าง worksheet
         const ws = XLSX.utils.json_to_sheet(data)
-        
+
         // ปรับแต่งความกว้างคอลัมน์
         const wscols = [
           { wch: 12 }, // date
@@ -552,7 +542,7 @@ export default {
 
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูล')
-        
+
         // บันทึกไฟล์
         XLSX.writeFile(wb, `ข้อมูล_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
       } catch (error) {
@@ -594,12 +584,14 @@ export default {
     const filteredTransactions = computed(() => {
       let transactions = []
       if (selectedType.value === 'income') {
-        transactions = filteredIncome.value
+        transactions = filteredIncome.value.map(item => ({ ...item, type: 'income' }))
       } else if (selectedType.value === 'expense') {
-        transactions = filteredExpenses.value
+        transactions = filteredExpenses.value.map(item => ({ ...item, type: 'expense' }))
       } else {
-        transactions = [...filteredIncome.value, ...filteredExpenses.value]
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
+        transactions = [
+          ...filteredIncome.value.map(item => ({ ...item, type: 'income' })),
+          ...filteredExpenses.value.map(item => ({ ...item, type: 'expense' }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date))
       }
       return transactions
     })
@@ -613,7 +605,7 @@ export default {
     const scrollToSection = (ref) => {
       nextTick(() => {
         if (ref.value) {
-          ref.value.scrollIntoView({ 
+          ref.value.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           })
@@ -650,8 +642,8 @@ export default {
     // Sort icon component helper
     const getSortIcon = (key) => {
       if (sortConfig.value.key === key) {
-        return sortConfig.value.direction === 'asc' 
-          ? 'fa-solid fa-sort-up' 
+        return sortConfig.value.direction === 'asc'
+          ? 'fa-solid fa-sort-up'
           : 'fa-solid fa-sort-down'
       }
       return 'fa-solid fa-sort'
@@ -667,11 +659,11 @@ export default {
     // Sorted data computed property
     const sortedData = computed(() => {
       const data = [...filteredTransactions.value] // or whatever your data source is
-      
+
       return data.sort((a, b) => {
         let compareResult = 0
-        
-        switch(sortConfig.value.key) {
+
+        switch (sortConfig.value.key) {
           case 'date':
             compareResult = new Date(a.date) - new Date(b.date)
             break
@@ -690,7 +682,7 @@ export default {
           default:
             compareResult = 0
         }
-        
+
         return sortConfig.value.direction === 'asc' ? compareResult : -compareResult
       })
     })
@@ -744,7 +736,7 @@ export default {
   background: var(--white);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .period-selector .input-group {
@@ -774,14 +766,14 @@ export default {
   background: var(--white);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .summary-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card .card-body {
@@ -886,7 +878,7 @@ export default {
     width: 100%;
     flex-wrap: wrap;
   }
-  
+
   .input-group {
     flex: 1;
     min-width: 140px;
