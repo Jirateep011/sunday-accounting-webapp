@@ -20,7 +20,7 @@
 
       <!-- Enhanced Dropdown -->
       <transition name="dropdown">
-        <div v-if="showDropdown" class="period-dropdown">
+        <div v-if="showDropdown" class="period-dropdown" @click.stop>
           <div class="dropdown-header">
             <h6>เลือกเดือนและปี</h6>
             <button class="close-btn" @click="showDropdown = false">
@@ -35,7 +35,7 @@
                 <button v-for="(month, index) in months"
                         :key="index"
                         :class="['month-btn', { active: selectedMonth === index }]"
-                        @click="selectMonth(index)">
+                        @click.stop="selectMonth(index)">
                   {{ month }}
                 </button>
               </div>
@@ -47,7 +47,7 @@
                 <button v-for="year in yearRange"
                         :key="year"
                         :class="['year-btn', { active: selectedYear === year }]"
-                        @click="selectYear(year)">
+                        @click.stop="selectYear(year)">
                   {{ year + 543 }}
                 </button>
               </div>
@@ -326,7 +326,8 @@ export default {
     }
     
     // เพิ่มฟังก์ชันใหม่
-    const toggleDropdown = () => {
+    const toggleDropdown = (event) => {
+      event.stopPropagation()
       showDropdown.value = !showDropdown.value
     }
     
@@ -342,18 +343,20 @@ export default {
     
     // ปิด dropdown เมื่อคลิกที่อื่น
     const handleClickOutside = (event) => {
+      const dateSelector = event.target.closest('.date-selector')
       const dropdown = event.target.closest('.period-dropdown')
-      if (!dropdown) {
+      
+      if (!dateSelector && !dropdown && showDropdown.value) {
         showDropdown.value = false
       }
     }
 
     onMounted(() => {
-      document.addEventListener('click', handleClickOutside)
+      document.addEventListener('click', handleClickOutside, true)
     })
 
     onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside, true)
     })
 
     return {
@@ -362,8 +365,8 @@ export default {
       weekDays,
       months,
       yearRange,
-      selectedMonth: computed(() => currentDate.value.getMonth()),
-      selectedYear: computed(() => currentDate.value.getFullYear()),
+      selectedMonth,
+      selectedYear,
       currentMonthYear,
       
       // State
