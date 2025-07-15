@@ -14,18 +14,27 @@ const incomeSchema = new mongoose.Schema({
     required: true
   },
   pocketId: {
-    type: String,
-    required: false
+    type: mongoose.Schema.Types.ObjectId,  // เปลี่ยนจาก String เป็น ObjectId
+    ref: 'Pocket',  // เพิ่ม reference ไปยัง Pocket model
+    required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-    createdByEmail: {
+  createdByEmail: {
     type: String,
     required: true
   }
+}, {
+  timestamps: true  // เพิ่ม timestamps
 });
 
-module.exports = mongoose.model('Income', incomeSchema);
+// เพิ่ม indexes เพื่อเพิ่มประสิทธิภาพการค้นหา
+incomeSchema.index({ userId: 1, date: -1 });
+incomeSchema.index({ pocketId: 1 });
+
+const Income = mongoose.model('Income', incomeSchema);
+
+module.exports = Income;

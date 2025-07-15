@@ -337,6 +337,7 @@ export default {
     const handleTransactionAdded = () => {
       showAddForm.value = false
       editingTransaction.value = null
+      store.dispatch('fetchIncome') // Refresh the list after edit/create
     }
 
     const closeForm = () => {
@@ -345,26 +346,28 @@ export default {
     }
 
     const editTransaction = (transaction) => {
-      editingTransaction.value = transaction
-      showAddForm.value = true // จะแสดง Modal
+      editingTransaction.value = { ...transaction }
+      showAddForm.value = true
     }
 
     const deleteTransaction = async (transaction) => {
       const result = await Swal.fire({
-        title: 'ยืนยันการลบ',
-        text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+        title: 'ยืนยันการลบรายการ',
+        text: 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        confirmButtonText: 'ลบ',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ลบรายการ',
         cancelButtonText: 'ยกเลิก'
       })
 
       if (result.isConfirmed) {
-        store.dispatch('deleteTransaction', {
-          type: 'income',
-          id: transaction.id
-        })
+        try {
+          await store.dispatch('deleteIncome', transaction._id)
+          Swal.fire('สำเร็จ', 'ลบรายการเรียบร้อยแล้ว', 'success')
+        } catch (error) {
+          Swal.fire('ผิดพลาด', 'ไม่สามารถลบรายการได้', 'error')
+        }
       }
     }
 

@@ -6,9 +6,14 @@ const API_URL = 'http://localhost:5000/api'
 
 export default createStore({
   state() {
+    const token = localStorage.getItem('token')
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    }
+    
     return {
       user: JSON.parse(localStorage.getItem('user')) || null,
-      token: localStorage.getItem('token') || null,
+      token: token || null,
       income: [],
       expenses: [],
       incomePockets: [],
@@ -33,6 +38,11 @@ export default createStore({
     clearAuth(state) {
       state.user = null
       state.token = null
+      state.income = []
+      state.expenses = []
+      state.pockets = []
+      state.incomePockets = []
+      state.expensePockets = []
       localStorage.removeItem('user')
       localStorage.removeItem('token')
       delete axios.defaults.headers.common['Authorization']
@@ -88,6 +98,101 @@ export default createStore({
     }
   },
   actions: {
+    // Income actions
+    async fetchIncome({ commit }) {
+      try {
+        const response = await axios.get(`${API_URL}/income`)
+        commit('setIncome', response.data)
+      } catch (error) {
+        console.error('Error fetching income:', error)
+        throw error
+      }
+    },
+    async addIncome({ commit }, income) {
+      try {
+        const response = await axios.post(`${API_URL}/income`, income)
+        commit('addIncome', response.data)
+        return response.data
+      } catch (error) {
+        console.error('Error adding income:', error)
+        throw error
+      }
+    },
+    async createIncome({ dispatch }, income) {
+      try {
+        await axios.post(`${API_URL}/income`, income)
+        await dispatch('fetchIncome')
+      } catch (error) {
+        console.error('Error creating income:', error)
+        throw error
+      }
+    },
+    async updateIncome({ dispatch }, { id, income }) {
+      try {
+        await axios.put(`${API_URL}/income/${id}`, income)
+        await dispatch('fetchIncome')
+      } catch (error) {
+        console.error('Error updating income:', error)
+        throw error
+      }
+    },
+    async deleteIncome({ dispatch }, id) {
+      try {
+        await axios.delete(`${API_URL}/income/${id}`)
+        await dispatch('fetchIncome')
+      } catch (error) {
+        console.error('Error deleting income:', error)
+        throw error
+      }
+    },
+
+    // Expense actions
+    async fetchExpenses({ commit }) {
+      try {
+        const response = await axios.get(`${API_URL}/expenses`)
+        commit('setExpenses', response.data)
+      } catch (error) {
+        console.error('Error fetching expenses:', error)
+        throw error
+      }
+    },
+    async addExpense({ commit }, expense) {
+      try {
+        const response = await axios.post(`${API_URL}/expenses`, expense)
+        commit('addExpense', response.data)
+        return response.data
+      } catch (error) {
+        console.error('Error adding expense:', error)
+        throw error
+      }
+    },
+    async createExpense({ dispatch }, expense) {
+      try {
+        await axios.post(`${API_URL}/expenses`, expense)
+        await dispatch('fetchExpenses')
+      } catch (error) {
+        console.error('Error creating expense:', error)
+        throw error
+      }
+    },
+    async updateExpense({ dispatch }, { id, expense }) {
+      try {
+        await axios.put(`${API_URL}/expenses/${id}`, expense)
+        await dispatch('fetchExpenses')
+      } catch (error) {
+        console.error('Error updating expense:', error)
+        throw error
+      }
+    },
+    async deleteExpense({ dispatch }, id) {
+      try {
+        await axios.delete(`${API_URL}/expenses/${id}`)
+        await dispatch('fetchExpenses')
+      } catch (error) {
+        console.error('Error deleting expense:', error)
+        throw error
+      }
+    },
     async register({ commit }, credentials) {
       try {
         const response = await axios.post(`${API_URL}/auth/register`, credentials)
@@ -114,87 +219,18 @@ export default createStore({
       commit('clearAuth')
       commit('clearTransactions')
     },
-    async fetchIncome({ commit }) {
-      try {
-        const response = await axios.get(`${API_URL}/income`)
-        commit('setIncome', response.data)
-      } catch (error) {
-        console.error('Error fetching income:', error)
-        throw error
-      }
-    },
-    async fetchExpenses({ commit }) {
-      try {
-        const response = await axios.get(`${API_URL}/expenses`)
-        commit('setExpenses', response.data)
-      } catch (error) {
-        console.error('Error fetching expenses:', error)
-        throw error
-      }
-    },
-    async addIncome({ commit }, incomeData) {
-      try {
-        const response = await axios.post(`${API_URL}/income`, incomeData)
-        commit('addIncome', response.data)
-        return response.data
-      } catch (error) {
-        console.error('Error adding income:', error)
-        throw error
-      }
-    },
-    async addExpense({ commit }, expenseData) {
-      try {
-        const response = await axios.post(`${API_URL}/expenses`, expenseData)
-        commit('addExpense', response.data)
-        return response.data
-      } catch (error) {
-        console.error('Error adding expense:', error)
-        throw error
-      }
-    },
-    async deleteIncome({ commit }, id) {
-      try {
-        await axios.delete(`${API_URL}/income/${id}`)
-        commit('deleteIncome', id)
-      } catch (error) {
-        console.error('Error deleting income:', error)
-      }
-    },
-    async deleteExpense({ commit }, id) {
-      try {
-        await axios.delete(`${API_URL}/expenses/${id}`)
-        commit('deleteExpense', id)
-      } catch (error) {
-        console.error('Error deleting expense:', error)
-      }
-    },
-    async updateIncome({ commit }, { id, data }) {
-      try {
-        const response = await axios.put(`${API_URL}/income/${id}`, data)
-        commit('updateIncome', response.data)
-        return response.data
-      } catch (error) {
-        console.error('Error updating income:', error)
-        throw error
-      }
-    },
-    async updateExpense({ commit }, { id, data }) {
-      try {
-        const response = await axios.put(`${API_URL}/expenses/${id}`, data)
-        commit('updateExpense', response.data)
-        return response.data
-      } catch (error) {
-        console.error('Error updating expense:', error)
-        throw error
-      }
-    },
     async fetchPockets({ commit }) {
       try {
-        const pockets = await PocketService.getAllPockets()
-        commit('setPockets', pockets)
+        const pockets = await PocketService.getAllPockets();
+        commit('setPockets', pockets);
+        return pockets;
       } catch (error) {
-        console.error('Error fetching pockets:', error)
-        throw error
+        console.error('Error fetching pockets:', error);
+        if (error.message.includes('กรุณาเข้าสู่ระบบ') || error.response?.status === 401) {
+          commit('setToken', null);
+          commit('setUser', null);
+        }
+        throw error;
       }
     },
     async createPocket({ commit }, pocketData) {
@@ -229,7 +265,16 @@ export default createStore({
   },
   getters: {
     isAuthenticated: state => !!state.token,
-    currentUser: state => state.user,
+    getUser: state => state.user,
+    incomePockets: state => state.pockets.filter(p => p.type === 'income'),
+    expensePockets: state => state.pockets.filter(p => p.type === 'expense'),
+    getIncomeTransactions: state => state.income,
+    getExpenseTransactions: state => state.expenses,
+    // Helper getter to get transactions by pocket
+    getTransactionsByPocket: (state) => (pocketId, type) => {
+      const transactions = type === 'income' ? state.income : state.expenses
+      return transactions.filter(t => t.pocketId === pocketId)
+    },
     totalIncome: (state) => {
       return state.income.reduce((total, entry) => total + Number(entry.amount), 0)
     },
@@ -238,8 +283,6 @@ export default createStore({
     },
     balance: (state, getters) => {
       return getters.totalIncome - getters.totalExpenses
-    },
-    incomePockets: state => state.pockets.filter(p => p.type === 'income'),
-    expensePockets: state => state.pockets.filter(p => p.type === 'expense')
+    }
   }
 })

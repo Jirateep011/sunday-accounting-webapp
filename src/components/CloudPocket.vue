@@ -3,22 +3,7 @@
     <!-- Page Header -->
     <div class="section-header mb-4">
       <div class="d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">หมวดหมู่รายรับ-รายจ่าย</h2>
-        <div class="actions">
-          <!-- Delete selected button -->
-          <button class="btn btn-danger btn-sm me-2" 
-                  :disabled="!selectedPockets.length"
-                  @click="deleteSelectedPockets">
-            <i class="fa-solid fa-trash me-1"></i>
-            ลบที่เลือก ({{ selectedPockets.length }})
-          </button>
-
-          <!-- Select mode toggle button -->
-          <button class="btn btn-outline-secondary btn-sm" @click="toggleSelectMode">
-            <i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-check-square'"></i>
-            {{ isSelectMode ? 'ยกเลิก' : 'เลือกหลายรายการ' }}
-          </button>
-        </div>
+        <h2>Cloud Pocket</h2>
       </div>
     </div>
 
@@ -26,47 +11,49 @@
       <!-- Income Categories -->
       <div class="col-12 col-lg-6">
         <div class="pocket-section">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0">
-              <i class="bi bi-graph-up-arrow text-success me-2"></i>
-              รายรับ
-            </h3>
-            <!-- Add category buttons -->
-            <button class="btn btn-outline-success btn-sm" @click="showAddPocketModal('income')">
-              <i class="fa-solid fa-plus"></i>
-              เพิ่มหมวดหมู่
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>หมวดหมู่รายรับ</h3>
+            <button class="btn btn-primary" @click="showAddPocketModal('income')">
+              + เพิ่มหมวดหมู่
             </button>
           </div>
-          <div class="pockets-container">
-            <div v-for="pocket in incomePockets" :key="pocket.id" class="pocket-card income">
-              <div class="pocket-content" @click="selectPocket(pocket)">
+          <div v-if="isLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">กำลังโหลดข้อมูล...</p>
+          </div>
+          <div v-else-if="incomePockets.length > 0">
+            <div v-for="pocket in incomePockets" :key="pocket._id" 
+              class="pocket-card income"
+              :class="{ 'multi-selected': isPocketSelected(pocket._id) }">
+              <div class="pocket-content" @click="handlePocketClick(pocket)">
                 <div class="pocket-icon">
                   <i :class="pocket.icon"></i>
                 </div>
                 <div class="pocket-info">
                   <h4>{{ pocket.name }}</h4>
-                  <p class="amount">
-                    <span class="text-muted">ยอดรวม:</span>
-                    <span class="ms-1">{{ calculatePocketTotal(pocket.id, 'income').toLocaleString() }} ฿</span>
-                  </p>
+                  <p class="amount">{{ formatAmount(calculatePocketTotal(pocket._id, 'income')) }} ฿</p>
                 </div>
               </div>
-              <div class="pocket-actions" v-if="!isSelectMode">
-                <!-- Edit and delete buttons in pocket cards -->
-                <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'income'})">
-                  <i class="fa-solid fa-pen"></i>
+              <div class="pocket-actions">
+                <button 
+                  class="btn btn-sm btn-outline-primary" 
+                  @click.stop="editPocket(pocket)"
+                  title="แก้ไข">
+                  <i class="fa-solid fa-edit"></i>
                 </button>
-                <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'income'})">
+                <button 
+                  class="btn btn-sm btn-outline-danger" 
+                  @click.stop="deletePocket(pocket)"
+                  title="ลบ">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
-              <div class="pocket-checkbox" v-else>
-                <input type="checkbox" 
-                       class="form-check-input" 
-                       :checked="isPocketSelected(pocket.id)"
-                       @click.stop="togglePocketSelection(pocket.id)">
-              </div>
             </div>
+          </div>
+          <div v-else class="text-center py-4">
+            <p>ไม่พบหมวดหมู่รายรับ</p>
           </div>
         </div>
       </div>
@@ -74,45 +61,49 @@
       <!-- Expense Categories -->
       <div class="col-12 col-lg-6">
         <div class="pocket-section">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0">
-              <i class="bi bi-graph-down-arrow text-danger me-2"></i>
-              รายจ่าย
-            </h3>
-            <button class="btn btn-outline-danger btn-sm" @click="showAddPocketModal('expense')">
-              <i class="fa-solid fa-plus"></i>
-              เพิ่มหมวดหมู่
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>หมวดหมู่รายจ่าย</h3>
+            <button class="btn btn-primary" @click="showAddPocketModal('expense')">
+              + เพิ่มหมวดหมู่
             </button>
           </div>
-          <div class="pockets-container">
-            <div v-for="pocket in expensePockets" :key="pocket.id" class="pocket-card expense">
+          <div v-if="isLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">กำลังโหลดข้อมูล...</p>
+          </div>
+          <div v-else-if="expensePockets.length > 0">
+            <div v-for="pocket in expensePockets" :key="pocket._id" 
+              class="pocket-card expense"
+              :class="{ 'multi-selected': isPocketSelected(pocket._id) }">
               <div class="pocket-content" @click="handlePocketClick(pocket)">
                 <div class="pocket-icon">
                   <i :class="pocket.icon"></i>
                 </div>
                 <div class="pocket-info">
                   <h4>{{ pocket.name }}</h4>
-                  <p class="amount">
-                    <span class="text-muted">ยอดรวม:</span>
-                    <span class="ms-1">{{ calculatePocketTotal(pocket.id, 'expense').toLocaleString() }} ฿</span>
-                  </p>
+                  <p class="amount">{{ formatAmount(calculatePocketTotal(pocket._id, 'expense')) }} ฿</p>
                 </div>
               </div>
-              <div class="pocket-actions" v-if="!isSelectMode">
-                <button class="btn btn-link btn-sm" @click.stop="editPocket({...pocket, type: 'expense'})">
-                  <i class="fa-solid fa-pen"></i>
+              <div class="pocket-actions">
+                <button 
+                  class="btn btn-sm btn-outline-primary" 
+                  @click.stop="editPocket(pocket)"
+                  title="แก้ไข">
+                  <i class="fa-solid fa-edit"></i>
                 </button>
-                <button class="btn btn-link btn-sm text-danger" @click.stop="deletePocket({...pocket, type: 'expense'})">
+                <button 
+                  class="btn btn-sm btn-outline-danger" 
+                  @click.stop="deletePocket(pocket)"
+                  title="ลบ">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
-              <div class="pocket-checkbox" v-else>
-                <input type="checkbox" 
-                       class="form-check-input" 
-                       :checked="isPocketSelected(pocket.id)"
-                       @click.stop="togglePocketSelection(pocket.id, 'expense')">
-              </div>
             </div>
+          </div>
+          <div v-else class="text-center py-4">
+            <p>ไม่พบหมวดหมู่รายจ่าย</p>
           </div>
         </div>
       </div>
@@ -166,7 +157,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="transaction in sortedData" :key="transaction.id">
+                <tr v-for="transaction in paginatedData" :key="transaction._id">
                   <td>{{ formatDate(transaction.date) }}</td>
                   <td>{{ transaction.description }}</td>
                   <td :class="[
@@ -174,7 +165,7 @@
                     transaction.type === 'income' ? 'text-success' : 'text-danger'
                   ]">
                     {{ transaction.type === 'income' ? '+' : '-' }}
-                    {{ transaction.amount.toLocaleString() }} ฿
+                    {{ Number(transaction.amount).toLocaleString() }} ฿
                   </td>
                 </tr>
                 <tr v-if="pocketTransactions.length === 0">
@@ -188,7 +179,7 @@
                 <tr>
                   <td colspan="2" class="text-end fw-bold">ยอดรวม:</td>
                   <td :class="['text-end fw-bold', pocketTotal >= 0 ? 'text-success' : 'text-danger']">
-                    {{ pocketTotal.toLocaleString() }} ฿
+                    {{ Number(pocketTotal).toLocaleString() }} ฿
                   </td>
                 </tr>
               </tfoot>
@@ -299,8 +290,9 @@
 </template>
 
 <script>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import TransactionForm from './shared/TransactionForm.vue'
 
@@ -311,6 +303,7 @@ export default {
   },
   setup() {
     const store = useStore()
+    const router = useRouter()
     const selectedPocket = ref(null)
     const showModal = ref(false)
     const newPocketType = ref('income')
@@ -323,8 +316,8 @@ export default {
     const editingPocket = ref(null)
     const isSelectMode = ref(false)
     const selectedPockets = ref([])
-    // เพิ่ม selectedDate
     const selectedDate = ref(new Date())
+    const isLoading = ref(false)
 
     const incomePockets = computed(() => store.getters.incomePockets)
     const expensePockets = computed(() => store.getters.expensePockets)
@@ -385,7 +378,7 @@ export default {
 
     const selectPocket = (pocket) => {
       if (isSelectMode.value) {
-        togglePocketSelection(pocket.id, pocket.type || 'income')
+        togglePocketSelection(pocket._id, pocket.type || 'income')
       } else {
         selectedPocket.value = pocket
         currentPage.value = 1 // รีเซ็ตหน้าเป็นหน้าแรก
@@ -427,32 +420,104 @@ export default {
       }
     }
 
-    const calculatePocketTotal = (pocketId, type) => {
-      const transactions = type === 'income' 
-        ? store.state.income.filter(t => t.pocketId === pocketId)
-        : store.state.expenses.filter(t => t.pocketId === pocketId)
-      
-      return transactions.reduce((sum, t) => {
-        // ตรวจสอบว่า amount เป็นตัวเลขหรือไม่
-        const amount = typeof t.amount === 'string' ? parseFloat(t.amount) : t.amount
-        return sum + (isNaN(amount) ? 0 : amount)
-      }, 0)
+    // Computed properties สำหรับจำนวนรายการของแต่ละ pocket
+    const getIncomeCount = (pocketId) => {
+      return store.state.income.filter(t => t.pocketId === pocketId).length
+    }
+    
+    const getExpenseCount = (pocketId) => {
+      return store.state.expenses.filter(t => t.pocketId === pocketId).length
     }
 
-    const handleTransaction = (transaction) => {
+    // เพิ่ม reactive computed สำหรับข้อมูลที่อัพเดท
+    const reactivePocketData = computed(() => {
+      // Force reactivity by accessing store state
+      const currentIncome = store.state.income
+      const currentExpenses = store.state.expenses
+      const currentPockets = store.state.pockets
+      
+      return {
+        income: currentIncome,
+        expenses: currentExpenses,
+        pockets: currentPockets,
+        timestamp: Date.now() // Force re-computation
+      }
+    })
+
+    const calculatePocketTotal = (pocketId, type) => {
+      // ใช้ reactive data เพื่อให้ re-compute เมื่อข้อมูลเปลี่ยน
+      reactivePocketData.value // ทำให้ reactive
+      
+      const transactions = type === 'income' 
+        ? store.state.income.filter(t => t.pocketId === pocketId)
+        : store.state.expenses.filter(t => t.pocketId === pocketId);
+      return transactions.reduce((total, t) => total + Number(t.amount), 0);
+    }
+
+    // Income pockets with totals
+    const incomePocketsWithTotals = computed(() => {
+      return incomePockets.value.map(pocket => ({
+        ...pocket,
+        total: calculatePocketTotal(pocket._id, 'income')
+      }));
+    });
+
+    // Expense pockets with totals
+    const expensePocketsWithTotals = computed(() => {
+      return expensePockets.value.map(pocket => ({
+        ...pocket,
+        total: calculatePocketTotal(pocket._id, 'expense')
+      }));
+    });
+
+    // Format amount to Thai Baht
+    const formatAmount = (amount) => {
+      return new Intl.NumberFormat('th-TH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    const handleTransaction = async (transaction) => {
       if (!selectedPocket.value) return
 
-      const newTransaction = {
-        ...transaction,
-        id: Date.now(),
-        date: new Date().toISOString(),
-        pocketId: selectedPocket.value.id
-      }
+      try {
+        const newTransaction = {
+          ...transaction,
+          pocketId: selectedPocket.value._id
+        }
 
-      if (transaction.type === 'income') {
-        store.dispatch('addIncome', newTransaction)
-      } else {
-        store.dispatch('addExpense', newTransaction)
+        if (transaction.type === 'income') {
+          await store.dispatch('addIncome', newTransaction)
+        } else {
+          await store.dispatch('addExpense', newTransaction)
+        }
+        
+        // รีเฟรชข้อมูลทันทีหลังจากเพิ่มรายการ
+        await Promise.all([
+          store.dispatch('fetchIncome'),
+          store.dispatch('fetchExpenses')
+        ])
+        
+        // แสดงข้อความสำเร็จ
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ!',
+          text: 'เพิ่มรายการเรียบร้อยแล้ว',
+          showConfirmButton: false,
+          timer: 1500
+        })
+        
+        // ปิดฟอร์มหลังจากเพิ่มสำเร็จ
+        showAddForm.value = false
+        
+      } catch (error) {
+        console.error('Error adding transaction:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถเพิ่มรายการได้'
+        })
       }
     }
 
@@ -460,11 +525,11 @@ export default {
       if (!selectedPocket.value) return []
 
       const incomeTransactions = store.state.income
-        .filter(t => t.pocketId === selectedPocket.value.id)
+        .filter(t => t.pocketId === selectedPocket.value._id)
         .map(t => ({ ...t, type: 'income' }))
 
       const expenseTransactions = store.state.expenses
-        .filter(t => t.pocketId === selectedPocket.value.id)
+        .filter(t => t.pocketId === selectedPocket.value._id)
         .map(t => ({ ...t, type: 'expense' }))
 
       return [...incomeTransactions, ...expenseTransactions]
@@ -636,7 +701,7 @@ export default {
 
     const handlePocketClick = (pocket) => {
       if (isSelectMode.value) {
-        togglePocketSelection(pocket.id, pocket.type || 'income')
+        togglePocketSelection(pocket._id, pocket.type || 'income')
       } else {
         selectPocket(pocket)
       }
@@ -710,6 +775,54 @@ export default {
       return sortedData.value.slice(startIndex.value, endIndex.value)
     })
 
+    // เพิ่มฟังก์ชัน loadPockets และ loadTransactions
+    const loadPockets = async () => {
+      try {
+        isLoading.value = true
+        await store.dispatch('fetchPockets')
+      } catch (error) {
+        console.error('Error loading pockets:', error)
+        if (error.message.includes('กรุณาเข้าสู่ระบบ')) {
+          // Redirect to login if not authenticated
+          router.push('/login')
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถโหลดข้อมูลหมวดหมู่ได้'
+          })
+        }
+      } finally {
+        isLoading.value = false
+      }
+    }
+
+    const loadTransactions = async () => {
+      try {
+        await Promise.all([
+          store.dispatch('fetchIncome'),
+          store.dispatch('fetchExpenses')
+        ])
+      } catch (error) {
+        console.error('Error loading transactions:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถโหลดข้อมูลรายการได้'
+        })
+      }
+    }
+
+    // เรียกใช้ loadPockets และ loadTransactions เมื่อ component ถูกสร้าง
+    onMounted(async () => {
+      try {
+        await loadPockets();
+        await loadTransactions();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    })
+
     return {
       incomePockets,
       expensePockets,
@@ -721,6 +834,9 @@ export default {
       closeModal,
       addNewPocket,
       calculatePocketTotal,
+      incomePocketsWithTotals,
+      expensePocketsWithTotals,
+      formatAmount,
       handleTransaction,
       showAddForm,
       pocketTransactions,
@@ -751,7 +867,14 @@ export default {
       // Sort functionality
       sort,
       getSortIcon,
-      sortedData
+      sortedData,
+      loadPockets,
+      loadTransactions,
+      // เพิ่มฟังก์ชันที่จำเป็น
+      isLoading,
+      getIncomeCount,
+      getExpenseCount,
+      reactivePocketData
     }
   }
 }
@@ -848,6 +971,17 @@ export default {
 
 .pocket-card:hover .pocket-actions {
   opacity: 1;
+}
+
+.pocket-actions .btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.875rem;
 }
 
 .pocket-checkbox {
@@ -983,16 +1117,17 @@ export default {
     opacity: 1;
   }
 
-  .pocket-actions button {
-    width: 32px;
-    height: 32px;
+  .pocket-actions .btn {
+    width: 28px;
+    height: 28px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 6px;
     background: var(--white);
     border: 1px solid var(--border-color);
+    font-size: 0.75rem;
   }
 }
 

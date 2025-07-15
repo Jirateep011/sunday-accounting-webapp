@@ -50,7 +50,7 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/cloud-pocket',
+    path: '/cloudpocket',
     name: 'CloudPocket',
     component: CloudPocket,
     meta: { requiresAuth: true }
@@ -62,14 +62,28 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
   const isAuthenticated = store.getters.isAuthenticated
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (requiresAuth && !isAuthenticated) {
     next('/login')
-  } else if (to.meta.requiresGuest && isAuthenticated) {
+  } else if (requiresGuest && isAuthenticated) {
     next('/dashboard')
   } else {
+    if (isAuthenticated && to.name !== 'Login' && to.name !== 'Register') {
+      // Ensure data is loaded
+      try {
+        await Promise.all([
+          store.dispatch('fetchPockets'),
+          store.dispatch('fetchIncome'),
+          store.dispatch('fetchExpenses')
+        ])
+      } catch (error) {
+        console.error('Error loading data:', error)
+      }
+    }
     next()
   }
 })

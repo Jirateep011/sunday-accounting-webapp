@@ -2,14 +2,13 @@ const Pocket = require('../models/Pocket');
 const User = require('../models/User');
 
 const defaultPockets = [
-  { name: 'เงินเดือน', type: 'income', icon: '💰' },
-  { name: 'โบนัส', type: 'income', icon: '🎁' },
-  { name: 'รายได้พิเศษ', type: 'income', icon: '💵' },
-  { name: 'อาหาร', type: 'expense', icon: '🍽️' },
-  { name: 'การเดินทาง', type: 'expense', icon: '🚗' },
-  { name: 'ที่พัก', type: 'expense', icon: '🏠' },
-  { name: 'สาธารณูปโภค', type: 'expense', icon: '💡' },
-  { name: 'ความบันเทิง', type: 'expense', icon: '🎮' }
+  { name: 'เงินเดือน', type: 'income', icon: 'fa-solid fa-sack-dollar' },
+  { name: 'โบนัส', type: 'income', icon: 'fa-solid fa-hand-holding-dollar' },
+  { name: 'รายได้พิเศษ', type: 'income', icon: 'fa-solid fa-piggy-bank' },
+  { name: 'อาหาร', type: 'expense', icon: 'fa-solid fa-burger' },
+  { name: 'การเดินทาง', type: 'expense', icon: 'fa-solid fa-car' },
+  { name: 'ที่พัก', type: 'expense', icon: 'fa-solid fa-house' },
+  { name: 'ของใช้', type: 'expense', icon: 'fa-solid fa-cart-shopping' }
 ];
 
 exports.createPocket = async (req, res) => {

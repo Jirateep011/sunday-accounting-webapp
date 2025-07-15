@@ -305,14 +305,40 @@ export default {
       return Number(amount).toLocaleString('th-TH')
     }
 
-    const handleTransactionAdded = () => {
-      showAddForm.value = false
-      editingTransaction.value = null
+    const deleteTransaction = async (transaction) => {
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบรายการ',
+        text: 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ลบรายการ',
+        cancelButtonText: 'ยกเลิก'
+      })
+
+      if (result.isConfirmed) {
+        try {
+          await store.dispatch('deleteExpense', transaction._id)
+          Swal.fire('สำเร็จ', 'ลบรายการเรียบร้อยแล้ว', 'success')
+        } catch (error) {
+          Swal.fire('ผิดพลาด', 'ไม่สามารถลบรายการได้', 'error')
+        }
+      }
     }
 
     const editTransaction = (transaction) => {
-      editingTransaction.value = transaction
+      editingTransaction.value = { 
+        ...transaction,
+        type: 'expense' // กำหนดค่า type เป็น expense เมื่อแก้ไข
+      }
       showAddForm.value = true
+    }
+
+    // Function to handle transaction edit/create
+    const handleTransactionAdded = () => {
+      showAddForm.value = false
+      editingTransaction.value = null
+      store.dispatch('fetchExpenses') // Refresh the list after edit/create
     }
 
     const closeForm = () => {
@@ -320,10 +346,10 @@ export default {
       editingTransaction.value = null
     }
 
-    const deleteTransaction = async (transaction) => {
+    const deleteSelectedTransactions = async () => {
       const result = await Swal.fire({
         title: 'ยืนยันการลบ',
-        text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+        text: `ต้องการลบรายการที่เลือกทั้งหมด ${selectedTransactions.value.length} รายการหรือไม่?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc3545',
@@ -332,10 +358,14 @@ export default {
       })
 
       if (result.isConfirmed) {
-        store.dispatch('deleteTransaction', {
-          type: 'expenses',
-          id: transaction.id
-        })
+        for (const id of selectedTransactions.value) {
+          await store.dispatch('deleteTransaction', {
+            type: 'expenses',
+            id: id
+          })
+        }
+        selectedTransactions.value = []
+        isSelectMode.value = false
       }
     }
 
@@ -427,30 +457,7 @@ export default {
       }
     }
 
-    // เพิ่มฟังก์ชันสำหรับลบรายการที่เลือก
-    const deleteSelectedTransactions = async () => {
-      const result = await Swal.fire({
-        title: 'ยืนยันการลบ',
-        text: `ต้องการลบรายการที่เลือกทั้งหมด ${selectedTransactions.value.length} รายการหรือไม่?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        confirmButtonText: 'ลบ',
-        cancelButtonText: 'ยกเลิก'
-      })
-
-      if (result.isConfirmed) {
-        for (const id of selectedTransactions.value) {
-          await store.dispatch('deleteTransaction', {
-            type: 'expenses',
-            id: id
-          })
-        }
-        selectedTransactions.value = []
-        isSelectMode.value = false
-      }
-    }
-
+    // watch
     watch(selectedDate, () => {
       currentPage.value = 1
     })

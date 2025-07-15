@@ -39,7 +39,7 @@
           <span class="nav-label">วิเคราะห์</span>
         </router-link>
 
-        <router-link to="/cloud-pocket" class="nav-item" active-class="active">
+        <router-link to="/cloudpocket" class="nav-item" active-class="active">
           <i class="nav-icon fas fa-cloud"></i>
           <span class="nav-label">Cloud Pocket</span>
         </router-link>

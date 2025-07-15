@@ -316,7 +316,7 @@ export default {
     const incomeChartData = computed(() => {
       const data = {}
       filteredIncome.value.forEach(item => {
-        const pocket = store.state.incomePockets.find(p => p.id === item.pocketId)
+        const pocket = store.getters.incomePockets.find(p => p._id === item.pocketId)
         const category = pocket ? pocket.name : 'ไม่ระบุหมวดหมู่'
         data[category] = (data[category] || 0) + Number(item.amount)
       })
@@ -330,7 +330,7 @@ export default {
     const expenseChartData = computed(() => {
       const data = {}
       filteredExpenses.value.forEach(item => {
-        const pocket = store.state.expensePockets.find(p => p.id === item.pocketId)
+        const pocket = store.getters.expensePockets.find(p => p._id === item.pocketId)
         const category = pocket ? pocket.name : 'ไม่ระบุหมวดหมู่'
         data[category] = (data[category] || 0) + Number(item.amount)
       })
@@ -454,7 +454,7 @@ export default {
         data.income = filteredIncome.value.map(item => ({
           date: new Date(item.date).toLocaleDateString('th-TH'),
           type: 'รายรับ',
-          category: store.state.incomePockets.find(p => p.id === item.pocketId)?.name || 'ไม่ระบุ',
+          category: store.getters.incomePockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
           description: item.description,
           amount: Number(item.amount).toLocaleString('th-TH')
         }))
@@ -464,7 +464,7 @@ export default {
         data.expense = filteredExpenses.value.map(item => ({
           date: new Date(item.date).toLocaleDateString('th-TH'),
           type: 'รายจ่าย',
-          category: store.state.expensePockets.find(p => p.id === item.pocketId)?.name || 'ไม่ระบุ',
+          category: store.getters.expensePockets.find(p => p._id === item.pocketId)?.name || 'ไม่ระบุ',
           description: item.description,
           amount: Number(item.amount).toLocaleString('th-TH')
         }))
@@ -508,6 +508,63 @@ export default {
       }
     }
 
+    // ฟังก์ชันสำหรับ export Excel แบบข้อมูลเพื่อนำเข้าใหม่
+    const exportToDataExcel = () => {
+      try {
+        const data = []
+        
+        if (exportType.value === 'all' || exportType.value === 'income') {
+          filteredIncome.value.forEach(item => {
+            data.push({
+              date: new Date(item.date).toISOString().split('T')[0], // Format YYYY-MM-DD
+              type: 'income',
+              pocketId: item.pocketId,
+              amount: Number(item.amount),
+              description: item.description
+            })
+          })
+        }
+
+        if (exportType.value === 'all' || exportType.value === 'expense') {
+          filteredExpenses.value.forEach(item => {
+            data.push({
+              date: new Date(item.date).toISOString().split('T')[0], // Format YYYY-MM-DD
+              type: 'expense',
+              pocketId: item.pocketId,
+              amount: Number(item.amount),
+              description: item.description
+            })
+          })
+        }
+        
+        // สร้าง worksheet
+        const ws = XLSX.utils.json_to_sheet(data)
+        
+        // ปรับแต่งความกว้างคอลัมน์
+        const wscols = [
+          { wch: 12 }, // date
+          { wch: 10 }, // type
+          { wch: 24 }, // pocketId
+          { wch: 12 }, // amount
+          { wch: 30 }  // description
+        ]
+        ws['!cols'] = wscols
+
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูล')
+        
+        // บันทึกไฟล์
+        XLSX.writeFile(wb, `ข้อมูล_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
+      } catch (error) {
+        console.error('Excel Export Error:', error)
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถส่งออกข้อมูลได้'
+        })
+      }
+    }
+
     // เพิ่ม watcher สำหรับ data changes
     watch([selectedMonth, selectedYear, () => store.state.income, () => store.state.expenses], () => {
       nextTick(() => {
@@ -529,8 +586,8 @@ export default {
     }
 
     const getPocketName = (pocketId, type) => {
-      const pockets = type === 'income' ? store.state.incomePockets : store.state.expensePockets
-      const pocket = pockets.find(p => p.id === pocketId)
+      const pockets = type === 'income' ? store.getters.incomePockets : store.getters.expensePockets
+      const pocket = pockets.find(p => p._id === pocketId)
       return pocket?.name || 'ไม่ระบุหมวดหมู่'
     }
 
@@ -658,6 +715,7 @@ export default {
       expenseChartData,
       exportType,
       exportToViewExcel,
+      exportToDataExcel,
       showDetails,
       selectedType,
       formatDate,

@@ -10,8 +10,9 @@
 </template>
 
 <script>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useStore } from 'vuex'
 import Navbar from './components/shared/Navbar.vue'
 
 export default {
@@ -20,24 +21,47 @@ export default {
     Navbar
   },
   setup() {
+    const store = useStore()
     const route = useRoute()
+    const isMobile = ref(false)
+
     const currentPageTitle = computed(() => {
       return route.name || 'Dashboard'
     })
 
-    const isMobile = ref(false)
+    const loadInitialData = async () => {
+      if (store.getters.isAuthenticated) {
+        try {
+          await Promise.all([
+            store.dispatch('fetchPockets'),
+            store.dispatch('fetchIncome'),
+            store.dispatch('fetchExpenses')
+          ])
+        } catch (error) {
+          console.error('Error loading initial data:', error)
+        }
+      }
+    }
 
     const checkMobile = () => {
       isMobile.value = window.innerWidth < 768
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       checkMobile()
       window.addEventListener('resize', checkMobile)
+      await loadInitialData()
     })
 
     onUnmounted(() => {
       window.removeEventListener('resize', checkMobile)
+    })
+
+    // Watch for auth state changes
+    watch(() => store.getters.isAuthenticated, async (isAuth) => {
+      if (isAuth) {
+        await loadInitialData()
+      }
     })
 
     return {

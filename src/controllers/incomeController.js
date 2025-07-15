@@ -13,19 +13,41 @@ exports.getAllIncome = async (req, res) => {
 // Create new income entry
 exports.createIncome = async (req, res) => {
     try {
+        console.log('Received income data:', req.body); // Log received data
+        console.log('User data:', req.user); // Log user data
+
         const { amount, description, date, pocketId } = req.body;
+        
+        // Validate required fields
+        if (!amount || !description || !date || !pocketId) {
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                received: { amount, description, date, pocketId }
+            });
+        }
+
         const newIncome = new Income({
-            amount,
+            amount: parseFloat(amount),
             description,
-            date,
+            date: new Date(date),
             pocketId,
             userId: req.user._id,
-            createdByEmail: user.email
+            createdByEmail: req.user.email
         });
+
+        console.log('New income object:', newIncome); // Log new income object
+
         const savedIncome = await newIncome.save();
+        console.log('Saved income:', savedIncome); // Log saved income
+
         res.status(201).json(savedIncome);
     } catch (error) {
-        res.status(500).json({ error: 'Error creating income entry' });
+        console.error('Error creating income:', error);
+        res.status(500).json({ 
+            error: 'Error creating income entry', 
+            message: error.message,
+            stack: error.stack 
+        });
     }
 };
 
