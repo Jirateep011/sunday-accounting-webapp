@@ -216,11 +216,11 @@ export default {
         })
       } catch (error) {
         console.error('Error adding transaction:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to add transaction'
-        })
+        // Swal.fire({
+        //   icon: 'error',
+        //   title: 'Error',
+        //   text: 'Failed to add transaction'
+        // })
       }
     }
 
