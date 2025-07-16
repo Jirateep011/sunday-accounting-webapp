@@ -1,8 +1,15 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
-import PocketService from '../../../backend/src/services/pocketService'
 
+<<<<<<< HEAD
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+=======
+// ใช้ environment variable สำหรับ production
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  process.env.VITE_API_URL ||
+  'http://localhost:5000/api'
+>>>>>>> ac0ab92daf00d6567daa6551649be88fa2437a99
 
 export default createStore({
   state() {
@@ -99,6 +106,16 @@ export default createStore({
   },
   actions: {
     // Income actions
+    // Pocket actions
+    async fetchPockets({ commit }) {
+      try {
+        const response = await axios.get(`${API_URL}/pockets`)
+        commit('setPockets', response.data)
+      } catch (error) {
+        console.error('Error fetching pockets:', error)
+        throw error
+      }
+    },
     async fetchIncome({ commit }) {
       try {
         const response = await axios.get(`${API_URL}/income`)
@@ -229,9 +246,9 @@ export default createStore({
     },
     async fetchPockets({ commit }) {
       try {
-        const pockets = await PocketService.getAllPockets();
-        commit('setPockets', pockets);
-        return pockets;
+        const response = await axios.get(`${API_URL}/pockets`)
+        commit('setPockets', response.data)
+        return response.data
       } catch (error) {
         console.error('Error fetching pockets:', error);
         if (error.message.includes('กรุณาเข้าสู่ระบบ') || error.response?.status === 401) {
@@ -243,9 +260,9 @@ export default createStore({
     },
     async createPocket({ commit }, pocketData) {
       try {
-        const pocket = await PocketService.createPocket(pocketData)
-        commit('addPocket', pocket)
-        return pocket
+        const response = await axios.post(`${API_URL}/pockets`, pocketData)
+        commit('addPocket', response.data)
+        return response.data
       } catch (error) {
         console.error('Error creating pocket:', error)
         throw error
@@ -253,9 +270,9 @@ export default createStore({
     },
     async updatePocket({ commit }, { id, data }) {
       try {
-        const pocket = await PocketService.updatePocket(id, data)
-        commit('updatePocket', pocket)
-        return pocket
+        const response = await axios.put(`${API_URL}/pockets/${id}`, data)
+        commit('updatePocket', response.data)
+        return response.data
       } catch (error) {
         console.error('Error updating pocket:', error)
         throw error
@@ -263,7 +280,7 @@ export default createStore({
     },
     async deletePocket({ commit }, id) {
       try {
-        await PocketService.deletePocket(id)
+        await axios.delete(`${API_URL}/pockets/${id}`)
         commit('deletePocket', id)
       } catch (error) {
         console.error('Error deleting pocket:', error)
