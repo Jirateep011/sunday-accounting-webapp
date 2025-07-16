@@ -185,14 +185,14 @@ export default {
 
     const handleTransaction = async (transaction) => {
       try {
-        if (!selectedPocket.value) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Please select a pocket first'
-          })
-          return
-        }
+        // if (!selectedPocket.value) {
+        //   Swal.fire({
+        //     icon: 'error',
+        //     title: 'Error',
+        //     text: 'Please select a pocket first'
+        //   })
+        //   return
+        // }
 
         const newTransaction = {
           amount: Number(transaction.amount),
@@ -204,10 +204,8 @@ export default {
         // Using store actions that connect to MongoDB
         if (transaction.type === 'income') {
           await store.dispatch('addIncome', newTransaction)
-          await store.dispatch('fetchIncome')
         } else {
           await store.dispatch('addExpense', newTransaction)
-          await store.dispatch('fetchExpenses')
         }
 
         // Show success message
@@ -273,11 +271,6 @@ export default {
           localStorage.setItem('suppressCategoryReminder', 'true')
         }
       })
-
-      // ตั้งค่า pocket อัตโนมัติถ้ายังไม่ได้เลือกและมี pocket ใน store
-      if (!selectedPocket.value && store.state.pockets && store.state.pockets.length > 0) {
-        selectedPocket.value = store.state.pockets[0]
-      }
     })
 
     return {
