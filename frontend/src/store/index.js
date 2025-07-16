@@ -1,15 +1,10 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
 
-<<<<<<< HEAD
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-=======
-// ใช้ environment variable สำหรับ production
 const API_URL =
   import.meta.env.VITE_API_URL ||
   process.env.VITE_API_URL ||
   'http://localhost:5000/api'
->>>>>>> ac0ab92daf00d6567daa6551649be88fa2437a99
 
 export default createStore({
   state() {
