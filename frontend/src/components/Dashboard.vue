@@ -271,6 +271,11 @@ export default {
           localStorage.setItem('suppressCategoryReminder', 'true')
         }
       })
+
+      // ตั้งค่า pocket อัตโนมัติถ้ายังไม่ได้เลือกและมี pocket ใน store
+      if (!selectedPocket.value && store.state.pockets && store.state.pockets.length > 0) {
+        selectedPocket.value = store.state.pockets[0]
+      }
     })
 
     return {
