@@ -204,8 +204,10 @@ export default {
         // Using store actions that connect to MongoDB
         if (transaction.type === 'income') {
           await store.dispatch('addIncome', newTransaction)
+          await store.dispatch('fetchIncome')
         } else {
           await store.dispatch('addExpense', newTransaction)
+          await store.dispatch('fetchExpenses')
         }
 
         // Show success message
