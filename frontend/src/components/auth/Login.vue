@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import Swal from 'sweetalert2'
@@ -72,6 +72,23 @@ export default {
         isLoading.value = false
       }
     }
+
+    onMounted(async () => {
+      // First notification for category reminder
+      await Swal.fire({
+        title: 'ขออภัย',
+        text: 'เนื่องจาก Server ของเราอยู่ในช่วงทดลองใช้งาน หากท่านพบเจอปัญหาในการกดปุ่มเข้าสู่ระบบหรือปุ่มสมัครสมาชิกแล้วหน้าเว็บไม่ดำเนินการต่อให้ กรุณารอสักครู่ประมาณ 1-2 นาที เนื่องจาก Server ได้ทำการ Sleep ไว้เพื่อประหยัดทรัพยากร ขอออภัยในความไม่สะดวก',
+        icon: 'warning',
+        confirmButtonText: 'ทราบแล้ว',
+        confirmButtonColor: '#6c5ce7',
+        showCancelButton: true,
+        cancelButtonText: 'ไม่ต้องเตือนอีก'
+      }).then((result) => {
+        if (result.isDismissed) {
+          localStorage.setItem('suppressCategoryReminder', 'true')
+        }
+      })
+    })
 
     return {
       email,
