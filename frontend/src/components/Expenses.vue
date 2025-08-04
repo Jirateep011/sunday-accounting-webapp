@@ -107,15 +107,15 @@
                 </thead>
                 <tbody>
                   <tr v-for="entry in filteredAndPaginatedExpenses" 
-                      :key="entry.id"
-                      :class="['transaction-row', { 'selected': isTransactionSelected(entry.id) }]"
+                      :key="entry._id"
+                      :class="['transaction-row', { 'selected': isTransactionSelected(entry._id) }]"
                       @click="handleRowClick(entry)">
                     <!-- เพิ่ม checkbox column ถ้าอยู่ในโหมดเลือก -->
                     <td v-if="isSelectMode" class="checkbox-column" @click.stop>
                       <input type="checkbox" 
                              class="form-check-input"
-                             :checked="isTransactionSelected(entry.id)"
-                             @click="toggleTransactionSelection(entry.id)">
+                             :checked="isTransactionSelected(entry._id)"
+                             @change="toggleTransactionSelection(entry._id)">
                     </td>
                     <td>{{ formatDate(entry.date) }}</td>
                     <td>{{ entry.description }}</td>
@@ -356,10 +356,7 @@ export default {
 
       if (result.isConfirmed) {
         for (const id of selectedTransactions.value) {
-          await store.dispatch('deleteTransaction', {
-            type: 'expenses',
-            id: id
-          })
+          await store.dispatch('deleteExpense', id)
         }
         selectedTransactions.value = []
         isSelectMode.value = false
@@ -450,7 +447,7 @@ export default {
 
     const handleRowClick = (entry) => {
       if (isSelectMode.value) {
-        toggleTransactionSelection(entry.id)
+        toggleTransactionSelection(entry._id)
       }
     }
 

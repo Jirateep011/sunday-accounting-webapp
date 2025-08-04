@@ -84,8 +84,8 @@ export default {
         showCancelButton: true,
         cancelButtonText: 'ไม่ต้องเตือนอีก'
       }).then((result) => {
-        if (result.isDismissed) {
-          localStorage.setItem('suppressCategoryReminder', 'true')
+        if (result.dismiss === Swal.DismissReason.cancel) {
+            localStorage.setItem('suppressCategoryReminder', 'true')
         }
       })
     })

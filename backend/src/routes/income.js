@@ -12,6 +12,9 @@ router.get('/', incomeController.getAllIncome);
 // Create new income entry
 router.post('/', incomeController.createIncome);
 
+// Create multiple income entries
+router.post('/bulk', incomeController.createMultipleIncome);
+
 // Get specific income entry
 router.get('/:id', incomeController.getIncomeById);
 

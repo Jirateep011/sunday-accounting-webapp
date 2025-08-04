@@ -5,8 +5,27 @@
       <div class="d-flex justify-content-between align-items-center">
         <h2>Cloud Pocket</h2>
       </div>
+      <div class="d-flex flex-wrap align-items-center gap-3 mt-3">
+        <div class="period-selector d-flex align-items-center gap-3">
+          <div class="input-group month-select">
+            <span class="input-group-text"><i class="fa-solid fa-calendar"></i></span>
+            <select v-model="selectedMonth" class="form-select">
+              <option v-for="(month, index) in months" :key="index" :value="index">
+                {{ month }}
+              </option>
+            </select>
+          </div>
+          <div class="input-group year-select">
+            <span class="input-group-text"><i class="fa-solid fa-calendar-days"></i></span>
+            <select v-model="selectedYear" class="form-select">
+              <option v-for="year in yearRange" :key="year" :value="year">
+                {{ year + 543 }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
-
     <div class="row g-4">
       <!-- Income Categories -->
       <div class="col-12 col-lg-6">
@@ -24,8 +43,7 @@
             <p class="mt-2">กำลังโหลดข้อมูล...</p>
           </div>
           <div v-else-if="incomePockets.length > 0">
-            <div v-for="pocket in incomePockets" :key="pocket._id" 
-              class="pocket-card income"
+            <div v-for="pocket in incomePockets" :key="pocket._id" class="pocket-card income"
               :class="{ 'multi-selected': isPocketSelected(pocket._id) }">
               <div class="pocket-content" @click="handlePocketClick(pocket)">
                 <div class="pocket-icon">
@@ -33,20 +51,16 @@
                 </div>
                 <div class="pocket-info">
                   <h4>{{ pocket.name }}</h4>
-                  <p class="amount">{{ formatAmount(calculatePocketTotal(pocket._id, 'income')) }} ฿</p>
+                  <p class="amount">
+                    {{ formatAmount(monthlyPocketTotal(pocket._id, 'income')) }} ฿
+                  </p>
                 </div>
               </div>
               <div class="pocket-actions">
-                <button 
-                  class="btn btn-sm btn-outline-primary" 
-                  @click.stop="editPocket(pocket)"
-                  title="แก้ไข">
+                <button class="btn btn-sm btn-outline-primary" @click.stop="editPocket(pocket)" title="แก้ไข">
                   <i class="fa-solid fa-edit"></i>
                 </button>
-                <button 
-                  class="btn btn-sm btn-outline-danger" 
-                  @click.stop="deletePocket(pocket)"
-                  title="ลบ">
+                <button class="btn btn-sm btn-outline-danger" @click.stop="deletePocket(pocket)" title="ลบ">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
@@ -74,8 +88,7 @@
             <p class="mt-2">กำลังโหลดข้อมูล...</p>
           </div>
           <div v-else-if="expensePockets.length > 0">
-            <div v-for="pocket in expensePockets" :key="pocket._id" 
-              class="pocket-card expense"
+            <div v-for="pocket in expensePockets" :key="pocket._id" class="pocket-card expense"
               :class="{ 'multi-selected': isPocketSelected(pocket._id) }">
               <div class="pocket-content" @click="handlePocketClick(pocket)">
                 <div class="pocket-icon">
@@ -83,20 +96,16 @@
                 </div>
                 <div class="pocket-info">
                   <h4>{{ pocket.name }}</h4>
-                  <p class="amount">{{ formatAmount(calculatePocketTotal(pocket._id, 'expense')) }} ฿</p>
+                  <p class="amount">
+                    {{ formatAmount(monthlyPocketTotal(pocket._id, 'expense')) }} ฿
+                  </p>
                 </div>
               </div>
               <div class="pocket-actions">
-                <button 
-                  class="btn btn-sm btn-outline-primary" 
-                  @click.stop="editPocket(pocket)"
-                  title="แก้ไข">
+                <button class="btn btn-sm btn-outline-primary" @click.stop="editPocket(pocket)" title="แก้ไข">
                   <i class="fa-solid fa-edit"></i>
                 </button>
-                <button 
-                  class="btn btn-sm btn-outline-danger" 
-                  @click.stop="deletePocket(pocket)"
-                  title="ลบ">
+                <button class="btn btn-sm btn-outline-danger" @click.stop="deletePocket(pocket)" title="ลบ">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
@@ -130,11 +139,8 @@
 
           <!-- Add Transaction Form -->
           <div v-if="showAddForm" class="add-form-section my-4">
-            <transaction-form 
-              :selected-date="selectedDate"
-              :selected-pocket="selectedPocket" 
-              @transaction-added="handleTransaction" 
-            />
+            <transaction-form :selected-date="selectedDate" :selected-pocket="selectedPocket"
+              @transaction-added="handleTransaction" />
           </div>
 
           <!-- Transactions List -->
@@ -194,10 +200,8 @@
                       <i class="bi bi-chevron-left"></i>
                     </button>
                   </li>
-                  <li v-for="page in displayedPages" 
-                      :key="page" 
-                      class="page-item"
-                      :class="{ active: currentPage === page }">
+                  <li v-for="page in displayedPages" :key="page" class="page-item"
+                    :class="{ active: currentPage === page }">
                     <button class="page-link" @click="changePage(page)">{{ page }}</button>
                   </li>
                   <li class="page-item" :class="{ disabled: currentPage === totalPages }">
@@ -347,7 +351,7 @@ export default {
       const pages = []
       let start = Math.max(1, currentPage.value - 2)
       let end = Math.min(totalPages.value, start + 4)
-      
+
       if (end - start < 4) {
         start = Math.max(1, end - 4)
       }
@@ -368,7 +372,7 @@ export default {
       // รอให้ DOM อัพเดทก่อนทำการ scroll
       nextTick(() => {
         if (transactionsSection.value) {
-          transactionsSection.value.scrollIntoView({ 
+          transactionsSection.value.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           })
@@ -403,7 +407,7 @@ export default {
         }
 
         await store.dispatch('createPocket', pocket)
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Success',
@@ -424,7 +428,7 @@ export default {
     const getIncomeCount = (pocketId) => {
       return store.state.income.filter(t => t.pocketId === pocketId).length
     }
-    
+
     const getExpenseCount = (pocketId) => {
       return store.state.expenses.filter(t => t.pocketId === pocketId).length
     }
@@ -435,7 +439,7 @@ export default {
       const currentIncome = store.state.income
       const currentExpenses = store.state.expenses
       const currentPockets = store.state.pockets
-      
+
       return {
         income: currentIncome,
         expenses: currentExpenses,
@@ -447,8 +451,8 @@ export default {
     const calculatePocketTotal = (pocketId, type) => {
       // ใช้ reactive data เพื่อให้ re-compute เมื่อข้อมูลเปลี่ยน
       reactivePocketData.value // ทำให้ reactive
-      
-      const transactions = type === 'income' 
+
+      const transactions = type === 'income'
         ? store.state.income.filter(t => t.pocketId === pocketId)
         : store.state.expenses.filter(t => t.pocketId === pocketId);
       return transactions.reduce((total, t) => total + Number(t.amount), 0);
@@ -492,13 +496,13 @@ export default {
         } else {
           await store.dispatch('addExpense', newTransaction)
         }
-        
+
         // รีเฟรชข้อมูลทันทีหลังจากเพิ่มรายการ
         await Promise.all([
           store.dispatch('fetchIncome'),
           store.dispatch('fetchExpenses')
         ])
-        
+
         // แสดงข้อความสำเร็จ
         Swal.fire({
           icon: 'success',
@@ -507,10 +511,10 @@ export default {
           showConfirmButton: false,
           timer: 1500
         })
-        
+
         // ปิดฟอร์มหลังจากเพิ่มสำเร็จ
         showAddForm.value = false
-        
+
       } catch (error) {
         console.error('Error adding transaction:', error)
         Swal.fire({
@@ -521,15 +525,24 @@ export default {
       }
     }
 
+    // กรอง pocketTransactions ตามเดือน/ปีที่เลือก
     const pocketTransactions = computed(() => {
       if (!selectedPocket.value) return []
 
       const incomeTransactions = store.state.income
         .filter(t => t.pocketId === selectedPocket.value._id)
+        .filter(t => {
+          const date = new Date(t.date)
+          return date.getMonth() === selectedMonth.value && date.getFullYear() === selectedYear.value
+        })
         .map(t => ({ ...t, type: 'income' }))
 
       const expenseTransactions = store.state.expenses
         .filter(t => t.pocketId === selectedPocket.value._id)
+        .filter(t => {
+          const date = new Date(t.date)
+          return date.getMonth() === selectedMonth.value && date.getFullYear() === selectedYear.value
+        })
         .map(t => ({ ...t, type: 'expense' }))
 
       return [...incomeTransactions, ...expenseTransactions]
@@ -557,7 +570,7 @@ export default {
       { value: 'fa-solid fa-piggy-bank' }, // กระปุกออมสิน
       { value: 'fa-solid fa-credit-card' }, // บัตรเครดิต
       { value: 'fa-solid fa-building-columns' }, // ธนาคาร
-      
+
       // Expense related icons
       { value: 'fa-solid fa-cart-shopping' }, // รถเข็นช้อปปิ้ง
       { value: 'fa-solid fa-burger' }, // อาหาร
@@ -615,7 +628,7 @@ export default {
           }
           selectedPockets.value = []
           isSelectMode.value = false
-          
+
           Swal.fire({
             icon: 'success',
             title: 'Success',
@@ -738,8 +751,8 @@ export default {
     // Sort icon component helper
     const getSortIcon = (key) => {
       if (sortConfig.value.key === key) {
-        return sortConfig.value.direction === 'asc' 
-          ? 'fa-solid fa-sort-up' 
+        return sortConfig.value.direction === 'asc'
+          ? 'fa-solid fa-sort-up'
           : 'fa-solid fa-sort-down'
       }
       return 'fa-solid fa-sort'
@@ -748,11 +761,11 @@ export default {
     // Sorted data computed property
     const sortedData = computed(() => {
       const data = [...pocketTransactions.value]
-      
+
       return data.sort((a, b) => {
         let compareResult = 0
-        
-        switch(sortConfig.value.key) {
+
+        switch (sortConfig.value.key) {
           case 'date':
             compareResult = new Date(a.date) - new Date(b.date)
             break
@@ -765,7 +778,7 @@ export default {
           default:
             compareResult = 0
         }
-        
+
         return sortConfig.value.direction === 'asc' ? compareResult : -compareResult
       })
     })
@@ -823,6 +836,29 @@ export default {
       }
     })
 
+    // ตัวเลือกเดือน/ปี
+    const months = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
+      'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
+      'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ]
+    const currentYear = new Date().getFullYear()
+    const yearRange = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
+    const selectedMonth = ref(new Date().getMonth())
+    const selectedYear = ref(currentYear)
+
+    // ฟังก์ชันคำนวณยอดรวมแต่ละ pocket ตามเดือน/ปีที่เลือก
+    const monthlyPocketTotal = (pocketId, type) => {
+      const transactions = (type === 'income'
+        ? store.state.income.filter(t => t.pocketId === pocketId)
+        : store.state.expenses.filter(t => t.pocketId === pocketId)
+      ).filter(t => {
+        const date = new Date(t.date)
+        return date.getMonth() === selectedMonth.value && date.getFullYear() === selectedYear.value
+      })
+      return transactions.reduce((total, t) => total + Number(t.amount), 0)
+    }
+
     return {
       incomePockets,
       expensePockets,
@@ -874,7 +910,13 @@ export default {
       isLoading,
       getIncomeCount,
       getExpenseCount,
-      reactivePocketData
+      reactivePocketData,
+      // Period selector
+      selectedMonth,
+      selectedYear,
+      months,
+      yearRange,
+      monthlyPocketTotal
     }
   }
 }
@@ -915,13 +957,13 @@ export default {
   background: white;
   border-radius: 8px;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
 .pocket-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pocket-content {
@@ -1102,7 +1144,7 @@ export default {
   .pocket-card {
     position: relative;
   }
-  
+
   .pocket-actions {
     position: absolute;
     top: 50%;
@@ -1187,6 +1229,51 @@ export default {
 }
 
 .transaction-section {
-  scroll-margin-top: 20px; /* เพิ่ม margin ด้านบนเวลา scroll */
+  scroll-margin-top: 20px;
+  /* เพิ่ม margin ด้านบนเวลา scroll */
+}
+
+.period-selector {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); */
+}
+
+.input-group {
+  flex: auto;
+}
+
+.input-group-text {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+/* .form-select {
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  padding: auto;
+  appearance: none;
+  background: white url('data:image/svg+xml;charset=utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath fill="none" stroke="%23333" stroke-width="2" d="M6 9l6 6 6-6"/%3E%3C/svg%3E') no-repeat right 0.75rem center;
+} */
+
+.form-select {
+  border-color: var(--border-color);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.fa-calendar,
+.fa-calendar-days {
+  font-size: 1rem;
 }
 </style>

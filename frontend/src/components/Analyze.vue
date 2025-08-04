@@ -14,6 +14,77 @@
                 </option>
               </select>
             </div>
+            <!-- Modal เปรียบเทียบรายจ่ายระหว่างเดือน -->
+            <div v-if="showCompareModal" class="compare-modal-overlay" @click.self="showCompareModal = false">
+              <div class="compare-modal-content">
+                <div class="modal-header d-flex justify-content-between align-items-center">
+                  <h4 class="mb-0">เปรียบเทียบรายจ่ายระหว่างเดือน</h4>
+                  <button type="button" class="btn-close" @click="showCompareModal = false"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                      <label>เดือนที่ 1</label>
+                      <select v-model="compareMonth1" class="form-select">
+                        <option v-for="(month, idx) in months" :key="idx" :value="idx">{{ month }}</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label>ปีที่ 1</label>
+                      <select v-model="compareYear1" class="form-select">
+                        <option v-for="year in yearRange" :key="year" :value="year">{{ year + 543 }}</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label>เดือนที่ 2</label>
+                      <select v-model="compareMonth2" class="form-select">
+                        <option v-for="(month, idx) in months" :key="idx" :value="idx">{{ month }}</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label>ปีที่ 2</label>
+                      <select v-model="compareYear2" class="form-select">
+                        <option v-for="year in yearRange" :key="year" :value="year">{{ year + 543 }}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="compare-result mt-3">
+                    <h5>ผลเปรียบเทียบ</h5>
+                    <div class="row g-3">
+                      <div class="col-12 col-md-6">
+                        <div class="card p-3">
+                          <h6 class="mb-2">{{ months[compareMonth1] }} {{ compareYear1 + 543 }}</h6>
+                          <div class="fs-4 text-danger">{{ formatAmount(expenseTotalMonth(compareMonth1, compareYear1))
+                          }} ฿</div>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <div class="card p-3">
+                          <h6 class="mb-2">{{ months[compareMonth2] }} {{ compareYear2 + 543 }}</h6>
+                          <div class="fs-4 text-danger">{{ formatAmount(expenseTotalMonth(compareMonth2, compareYear2))
+                          }} ฿</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <span
+                        v-if="expenseTotalMonth(compareMonth1, compareYear1) > expenseTotalMonth(compareMonth2, compareYear2)"
+                        class="text-success">
+                        เดือนที่ 1 มีรายจ่ายมากกว่าเดือนที่ 2 {{ formatAmount(expenseTotalMonth(compareMonth1,
+                          compareYear1) - expenseTotalMonth(compareMonth2, compareYear2)) }} ฿
+                      </span>
+                      <span
+                        v-else-if="expenseTotalMonth(compareMonth1, compareYear1) < expenseTotalMonth(compareMonth2, compareYear2)"
+                        class="text-danger">
+                        เดือนที่ 2 มีรายจ่ายมากกว่าเดือนที่ 1 {{ formatAmount(expenseTotalMonth(compareMonth2,
+                          compareYear2) - expenseTotalMonth(compareMonth1, compareYear1)) }} ฿
+                      </span>
+                      <span v-else class="text-muted">รายจ่ายเท่ากันทั้งสองเดือน</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="input-group year-select">
               <span class="input-group-text"><i class="fa-solid fa-calendar-days"></i></span>
               <select v-model="selectedYear" class="form-select">
@@ -27,6 +98,10 @@
 
         <!-- Export/Import Buttons -->
         <div class="action-buttons d-flex gap-2">
+          <button class="btn btn-outline-secondary" type="button" @click="showCompareModal = true">
+            <i class="fa-solid fa-chart-column me-2"></i>
+            เปรียบเทียบรายจ่าย
+          </button>
           <div class="dropdown">
             <button class="btn btn-primary" type="button" data-bs-toggle="dropdown">
               <i class="fa-solid fa-download me-2"></i>
@@ -62,10 +137,6 @@
                     <button class="btn btn-sm btn-outline-success" @click="exportToViewExcel">
                       <i class="bi bi-file-earmark-spreadsheet me-1"></i>
                       ดาวน์โหลดรายงาน Excel
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary" @click="exportToDataExcel">
-                      <i class="bi bi-file-earmark-arrow-down me-1"></i>
-                      ดาวน์โหลดข้อมูลเพื่อนำเข้าใหม่
                     </button>
                   </div>
                 </div>
@@ -249,7 +320,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useStore } from 'vuex'
 import Chart from 'chart.js/auto'
 import { jsPDF } from 'jspdf'
@@ -270,6 +341,11 @@ export default {
     const exportType = ref('all')
     const showDetails = ref(false)
     const selectedType = ref('all')
+    const showCompareModal = ref(false)
+    const compareMonth1 = ref(new Date().getMonth())
+    const compareYear1 = ref(new Date().getFullYear())
+    const compareMonth2 = ref(new Date().getMonth())
+    const compareYear2 = ref(new Date().getFullYear())
 
     const months = [
       'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
@@ -302,6 +378,16 @@ export default {
           date.getFullYear() === selectedYear.value
       })
     })
+
+    // ฟังก์ชันคำนวณรายจ่ายรวมของแต่ละเดือน
+    const expenseTotalMonth = (month, year) => {
+      return store.state.expenses
+        .filter(item => {
+          const d = new Date(item.date)
+          return d.getMonth() === month && d.getFullYear() === year
+        })
+        .reduce((sum, item) => sum + Number(item.amount), 0)
+    }
 
     const incomeChartData = computed(() => {
       const data = {}
@@ -470,8 +556,31 @@ export default {
       try {
         const data = getExportData()
 
+        const summaryRows = [
+          ['รายงานรายรับรายจ่าย', '', '', '', ''],
+          [`เดือน: ${months[selectedMonth.value]}`, '', '', '', ''],
+          [`ปี: ${selectedYear.value + 543}`, '', '', '', ''],
+          ['รวมรายรับ', formatAmount(totalIncome.value), '', '', ''],
+          ['รวมรายจ่าย', formatAmount(totalExpenses.value), '', '', ''],
+          ['คงเหลือ', formatAmount(balance.value), '', '', ''],
+          [], // เว้นบรรทัด
+          ['วันที่', 'ประเภท', 'หมวดหมู่', 'รายละเอียด', 'จำนวนเงิน']
+        ]
+
+        // รวม summary กับข้อมูลหลัก
+        const exportRows = [
+          ...summaryRows,
+          ...data.map(item => [
+            item.date,
+            item.type,
+            item.category,
+            item.description,
+            item.amount
+          ])
+        ]
+
         // สร้าง worksheet
-        const ws = XLSX.utils.json_to_sheet(data)
+        const ws = XLSX.utils.aoa_to_sheet(exportRows)
 
         // ปรับแต่งความกว้างคอลัมน์
         const wscols = [
@@ -487,7 +596,7 @@ export default {
         XLSX.utils.book_append_sheet(wb, ws, 'รายงาน')
 
         // บันทึกไฟล์
-        XLSX.writeFile(wb, `รายงาน_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
+        XLSX.writeFile(wb, `รายงานรายรับรายจ่ายเดือน_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
       } catch (error) {
         console.error('Excel Export Error:', error)
         Swal.fire({
@@ -497,70 +606,6 @@ export default {
         })
       }
     }
-
-    // ฟังก์ชันสำหรับ export Excel แบบข้อมูลเพื่อนำเข้าใหม่
-    const exportToDataExcel = () => {
-      try {
-        const data = []
-
-        if (exportType.value === 'all' || exportType.value === 'income') {
-          filteredIncome.value.forEach(item => {
-            data.push({
-              date: new Date(item.date).toISOString().split('T')[0], // Format YYYY-MM-DD
-              type: 'income',
-              pocketId: item.pocketId,
-              amount: Number(item.amount),
-              description: item.description
-            })
-          })
-        }
-
-        if (exportType.value === 'all' || exportType.value === 'expense') {
-          filteredExpenses.value.forEach(item => {
-            data.push({
-              date: new Date(item.date).toISOString().split('T')[0], // Format YYYY-MM-DD
-              type: 'expense',
-              pocketId: item.pocketId,
-              amount: Number(item.amount),
-              description: item.description
-            })
-          })
-        }
-
-        // สร้าง worksheet
-        const ws = XLSX.utils.json_to_sheet(data)
-
-        // ปรับแต่งความกว้างคอลัมน์
-        const wscols = [
-          { wch: 12 }, // date
-          { wch: 10 }, // type
-          { wch: 24 }, // pocketId
-          { wch: 12 }, // amount
-          { wch: 30 }  // description
-        ]
-        ws['!cols'] = wscols
-
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, 'ข้อมูล')
-
-        // บันทึกไฟล์
-        XLSX.writeFile(wb, `ข้อมูล_${months[selectedMonth.value]}_${selectedYear.value + 543}.xlsx`)
-      } catch (error) {
-        console.error('Excel Export Error:', error)
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: 'ไม่สามารถส่งออกข้อมูลได้'
-        })
-      }
-    }
-
-    // เพิ่ม watcher สำหรับ data changes
-    watch([selectedMonth, selectedYear, () => store.state.income, () => store.state.expenses], () => {
-      nextTick(() => {
-        updateCharts()
-      })
-    }, { deep: true })
 
     onMounted(() => {
       updateCharts()
@@ -707,7 +752,6 @@ export default {
       expenseChartData,
       exportType,
       exportToViewExcel,
-      exportToDataExcel,
       showDetails,
       selectedType,
       formatDate,
@@ -725,7 +769,13 @@ export default {
       currentPage,
       startIndex,
       endIndex,
-      paginatedData
+      paginatedData,
+      showCompareModal,
+      compareMonth1,
+      compareYear1,
+      compareMonth2,
+      compareYear2,
+      expenseTotalMonth
     }
   }
 }
@@ -871,6 +921,53 @@ export default {
 .btn-outline-primary:disabled {
   color: var(--text-muted);
   border-color: var(--text-muted);
+}
+
+/* Modal เปรียบเทียบรายจ่าย */
+.compare-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compare-modal-content {
+  background: var(--white);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
+  padding: 2rem 1.5rem;
+  position: relative;
+}
+
+.compare-modal-content .modal-header {
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1rem;
+}
+
+.compare-modal-content .btn-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.compare-modal-content .modal-body label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.compare-result .card {
+  background: #f9f9f9;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 768px) {

@@ -12,6 +12,9 @@ router.get('/', expenseController.getAllExpenses);
 // Create new expense
 router.post('/', expenseController.createExpense);
 
+// Create multiple expenses
+router.post('/bulk', expenseController.createMultipleExpenses);
+
 // Get specific expense
 router.get('/:id', expenseController.getExpenseById);
 

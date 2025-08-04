@@ -797,7 +797,7 @@ export default {
 }
 
 /* Mobile Styles */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .modern-calendar {
     padding: 1rem;
     margin: 0;
@@ -996,7 +996,7 @@ export default {
   transition: opacity 0.2s ease;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .period-dropdown::before {
     opacity: 1;
   }

@@ -139,6 +139,15 @@ export default createStore({
         throw error
       }
     },
+    async createMultipleIncome({ dispatch }, incomes) {
+      try {
+        await axios.post(`${API_URL}/income/bulk`, { incomes })
+        await dispatch('fetchIncome')
+      } catch (error) {
+        console.error('Error creating multiple income entries:', error)
+        throw error
+      }
+    },
     async updateIncome({ dispatch }, { id, income }) {
       try {
         await axios.put(`${API_URL}/income/${id}`, income)
@@ -184,6 +193,15 @@ export default createStore({
         await dispatch('fetchExpenses')
       } catch (error) {
         console.error('Error creating expense:', error)
+        throw error
+      }
+    },
+    async createMultipleExpenses({ dispatch }, expenses) {
+      try {
+        await axios.post(`${API_URL}/expenses/bulk`, { expenses })
+        await dispatch('fetchExpenses')
+      } catch (error) {
+        console.error('Error creating multiple expenses:', error)
         throw error
       }
     },

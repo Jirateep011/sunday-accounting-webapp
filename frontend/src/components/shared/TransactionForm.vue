@@ -1,6 +1,40 @@
 <template>
   <div class="transaction-form">
-    <h2 class="text-center">{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการ' }}</h2>
+    <!-- Mode Selection -->
+    <div class="mode-selection" v-if="!isEditing">
+      <div class="mode-tabs">
+        <button 
+          type="button"
+          class="mode-tab"
+          :class="{ 'active': !multipleMode }"
+          @click="multipleMode = false"
+        >
+          <i class="fa-solid fa-plus me-2"></i>
+          เพิ่มรายการเดียว
+        </button>
+        <button 
+          type="button"
+          class="mode-tab"
+          :class="{ 'active': multipleMode }"
+          @click="multipleMode = true"
+        >
+          <i class="fa-solid fa-layer-group me-2"></i>
+          เพิ่มหลายรายการ
+        </button>
+      </div>
+    </div>
+
+    <!-- Multiple Transaction Form -->
+    <MultipleTransactionForm 
+      v-if="multipleMode && !isEditing"
+      :selectedDate="selectedDate"
+      @transactions-added="onTransactionsAdded"
+      @cancel="$emit('cancel')"
+    />
+
+    <!-- Single Transaction Form -->
+    <div v-else class="single-transaction-form">
+      <h2 class="text-center">{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการ' }}</h2>
     <form @submit.prevent="submitTransaction">
       <!-- Enhanced Date Picker -->
       <div class="mb-3">
@@ -150,6 +184,7 @@
         </button>
       </div>
     </form>
+    </div>
   </div>
 </template>
 
@@ -157,8 +192,12 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import Swal from 'sweetalert2'
 import { useStore } from 'vuex'
+import MultipleTransactionForm from './MultipleTransactionForm.vue'
 
 export default {
+  components: {
+    MultipleTransactionForm
+  },
   props: {
     selectedDate: {
       type: Date,
@@ -173,6 +212,9 @@ export default {
   setup(props, { emit }) {
     const store = useStore()
     const nativeDateInput = ref(null)
+
+    // Mode selection
+    const multipleMode = ref(false)
 
     // Date picker states
     const showDatePicker = ref(false)
@@ -511,7 +553,17 @@ export default {
       }
     }
 
+    // Handle multiple transactions added
+    const onTransactionsAdded = (transactions) => {
+      emit('transaction-added', transactions)
+      multipleMode.value = false
+    }
+
     return {
+      // Mode selection
+      multipleMode,
+      onTransactionsAdded,
+      
       // Form data
       transactionType,
       selectedPocketId,
@@ -562,6 +614,45 @@ export default {
   padding: 2rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid #f1f5f9;
+}
+
+/* Mode Selection Styles */
+.mode-selection {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e1e5e9;
+  padding-bottom: 1.5rem;
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.25rem;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.mode-tab.active {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+}
+
+.mode-tab:hover:not(.active) {
+  background: #e2e8f0;
+  color: var(--text-color);
 }
 
 .transaction-form h2 {
@@ -814,7 +905,7 @@ export default {
   color: white;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .close-calendar-btn {
     display: flex !important;
   }
@@ -1102,7 +1193,7 @@ export default {
 }
 
 /* Mobile Styles */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .transaction-form {
     padding: 0.75rem;
     border-radius: 12px;

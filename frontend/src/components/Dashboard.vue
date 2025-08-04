@@ -62,7 +62,7 @@
       <!-- Transaction Form Column -->
       <div class="col-12 col-md-6 col-lg-4 order-1 order-md-2">
         <div class="card h-100">
-          <div class="card-body">
+          <div class="">
             <transaction-form 
               :selected-date="selectedDate"
               @transaction-added="handleTransaction" 
@@ -94,27 +94,29 @@
             </div>
             
             <div class="transactions-list" v-if="activeTab === 'income'">
-              <div v-for="entry in recentIncome" 
-                   :key="entry.id" 
-                   class="transaction-item">
-                <div class="transaction-info">
-                  <span class="description">{{ entry.description }}</span>
-                  <span class="date">{{ formatDate(entry.date) }}</span>
+              <template v-for="(entry, idx) in recentIncome" :key="entry.id">
+                <div class="transaction-item">
+                  <div class="transaction-info">
+                    <span class="description">{{ entry.description }}</span>
+                    <span class="date">{{ formatDate(entry.date) }}</span>
+                  </div>
+                  <span class="amount income">+{{ entry.amount }} ฿</span>
                 </div>
-                <span class="amount income">+{{ entry.amount }} ฿</span>
-              </div>
+                <hr v-if="idx < recentIncome.length - 1" class="transaction-divider" />
+              </template>
             </div>
 
             <div class="transactions-list" v-else>
-              <div v-for="entry in recentExpenses" 
-                   :key="entry.id" 
-                   class="transaction-item">
-                <div class="transaction-info">
-                  <span class="description">{{ entry.description }}</span>
-                  <span class="date">{{ formatDate(entry.date) }}</span>
+              <template v-for="(entry, idx) in recentExpenses" :key="entry.id">
+                <div class="transaction-item">
+                  <div class="transaction-info">
+                    <span class="description">{{ entry.description }}</span>
+                    <span class="date">{{ formatDate(entry.date) }}</span>
+                  </div>
+                  <span class="amount expenses">-{{ entry.amount }} ฿</span>
                 </div>
-                <span class="amount expenses">-{{ entry.amount }} ฿</span>
-              </div>
+                <hr v-if="idx < recentExpenses.length - 1" class="transaction-divider" />
+              </template>
             </div>
           </div>
         </div>
@@ -257,20 +259,22 @@ export default {
 
     onMounted(async () => {
       // First notification for category reminder
-      await Swal.fire({
-        title: 'เริ่มต้นใช้งาน',
-        text: 'อย่าลืมสร้างหมวดหมู่รายรับ-รายจ่ายก่อนเริ่มใช้งานนะคะ',
-        icon: 'info',
-        confirmButtonText: 'ตกลง',
-        confirmButtonColor: '#6c5ce7',
-        showCancelButton: true,
-        cancelButtonText: 'ไม่ต้องเตือนอีก',
-        footer: '<a href="/cloudpocket">ไปที่หน้าหมวดหมู่</a>'
-      }).then((result) => {
-        if (result.isDismissed) {
-          localStorage.setItem('suppressCategoryReminder', 'true')
-        }
-      })
+      if (!localStorage.getItem('suppressCategoryReminder')) {
+        await Swal.fire({
+          title: 'เริ่มต้นใช้งาน',
+          text: 'อย่าลืมสร้างหมวดหมู่รายรับ-รายจ่ายก่อนเริ่มใช้งานนะคะ',
+          icon: 'info',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#6c5ce7',
+          showCancelButton: true,
+          cancelButtonText: 'ไม่ต้องเตือนอีก',
+          footer: '<a href="/cloudpocket">ไปที่หน้าหมวดหมู่</a>'
+        }).then((result) => {
+          if (result.dismiss === Swal.DismissReason.cancel) {
+            localStorage.setItem('suppressCategoryReminder', 'true')
+          }
+        })
+      }
     })
 
     return {
@@ -404,7 +408,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
 }
 
 .transaction-info {
@@ -431,6 +434,15 @@ export default {
 
 .amount.expenses {
   color: #ff3d00;
+}
+
+.transaction-divider {
+  border: none;
+  border-top: 2px solid #bdbdbd;
+  margin: 0.5rem 0 0 0;
+  width: 100%;
+  align-self: center;
+  opacity: 0.8;
 }
 
 .calendar-wrapper {
