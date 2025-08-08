@@ -61,7 +61,14 @@
 
       <!-- Transaction Form Column -->
       <div class="col-12 col-md-6 col-lg-4 order-1 order-md-2">
-        <div class="card h-100">
+        <div class="h-100">
+          <div class="mt-3 px-3 pb-3">
+              <button class="btn button-outline w-100" @click="showMultipleModal = true">
+                <i class="fa-solid fa-layer-group me-2"></i>
+                เพิ่มหลายรายการ
+              </button>
+          </div>
+
           <div class="">
             <transaction-form 
               :selected-date="selectedDate"
@@ -122,6 +129,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Multiple Transactions Modal -->
+    <div v-if="showMultipleModal" class="sa-modal-overlay" @click.self="showMultipleModal = false">
+      <div class="sa-modal-container">
+        <div class="sa-modal-header">
+          <h3>เพิ่มรายการหลายรายการ</h3>
+          <button class="btn btn-outline btn-sm btn-danger" @click="showMultipleModal = false" aria-label="Close">X</button>
+        </div>
+        <div class="sa-modal-body">
+          <multiple-transaction-form
+            :selected-date="selectedDate"
+            @transactions-added="onMultipleTransactionsAdded"
+            @cancel="showMultipleModal = false"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -130,19 +154,22 @@ import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import Calendar from './shared/Calendar.vue'
 import TransactionForm from './shared/TransactionForm.vue'
+import MultipleTransactionForm from './shared/MultipleTransactionForm.vue'
 import Swal from 'sweetalert2'
 
 export default {
   name: 'Dashboard',
   components: {
     Calendar,
-    TransactionForm
+    TransactionForm,
+    MultipleTransactionForm
   },
   setup() {
     const store = useStore()
     const selectedDate = ref(new Date())
     const activeTab = ref('income')
     const selectedPocket = ref(null)
+    const showMultipleModal = ref(false)
     
     const isInSelectedMonth = (date) => {
       const transactionDate = new Date(date)
@@ -187,20 +214,12 @@ export default {
 
     const handleTransaction = async (transaction) => {
       try {
-        // if (!selectedPocket.value) {
-        //   Swal.fire({
-        //     icon: 'error',
-        //     title: 'Error',
-        //     text: 'Please select a pocket first'
-        //   })
-        //   return
-        // }
 
         const newTransaction = {
           amount: Number(transaction.amount),
           description: transaction.description,
           date: transaction.date || new Date().toISOString(),
-          pocketId: selectedPocket.value._id // Using MongoDB _id
+          pocketId: selectedPocket.value?._id // Using MongoDB _id (safe optional chaining)
         }
 
         // Using store actions that connect to MongoDB
@@ -218,11 +237,6 @@ export default {
         })
       } catch (error) {
         console.error('Error adding transaction:', error)
-        // Swal.fire({
-        //   icon: 'error',
-        //   title: 'Error',
-        //   text: 'Failed to add transaction'
-        // })
       }
     }
 
@@ -256,6 +270,10 @@ export default {
       const today = new Date()
       return days[today.getDay()]
     })
+
+    const onMultipleTransactionsAdded = () => {
+      showMultipleModal.value = false
+    }
 
     onMounted(async () => {
       // First notification for category reminder
@@ -292,7 +310,9 @@ export default {
       formatDate,
       greeting,
       currentDay,
-      selectedPocket
+      selectedPocket,
+      showMultipleModal,
+      onMultipleTransactionsAdded
     }
   }
 }
@@ -319,7 +339,7 @@ export default {
 }
 
 .overview-card {
-  background: var(--white);
+  background: white;
   border-radius: var(--border-radius);
   padding: 1.5rem;
   height: 100%;
@@ -449,6 +469,60 @@ export default {
   position: sticky;
   top: 1rem;
   z-index: 2;
+}
+
+/* Simple modal styles */
+.sa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1050;
+}
+
+.sa-modal-container {
+  width: min(900px, 100%);
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.sa-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.sa-modal-body {
+  padding: 1rem 1.25rem 1.25rem 1.25rem;
+}
+
+/* .sa-close-btn {
+  background: red;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-light);
+} */
+
+.button-outline {
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.button-outline:hover {
+  background: var(--primary-color);
+  color: white;
 }
 
 @media (max-width: 768px) {

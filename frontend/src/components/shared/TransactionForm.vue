@@ -1,189 +1,147 @@
 <template>
   <div class="transaction-form">
-    <!-- Mode Selection -->
-    <div class="mode-selection" v-if="!isEditing">
-      <div class="mode-tabs">
-        <button 
-          type="button"
-          class="mode-tab"
-          :class="{ 'active': !multipleMode }"
-          @click="multipleMode = false"
-        >
-          <i class="fa-solid fa-plus me-2"></i>
-          เพิ่มรายการเดียว
-        </button>
-        <button 
-          type="button"
-          class="mode-tab"
-          :class="{ 'active': multipleMode }"
-          @click="multipleMode = true"
-        >
-          <i class="fa-solid fa-layer-group me-2"></i>
-          เพิ่มหลายรายการ
-        </button>
-      </div>
-    </div>
-
-    <!-- Multiple Transaction Form -->
-    <MultipleTransactionForm 
-      v-if="multipleMode && !isEditing"
-      :selectedDate="selectedDate"
-      @transactions-added="onTransactionsAdded"
-      @cancel="$emit('cancel')"
-    />
-
     <!-- Single Transaction Form -->
-    <div v-else class="single-transaction-form">
-      <h2 class="text-center">{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการ' }}</h2>
-    <form @submit.prevent="submitTransaction">
-      <!-- Enhanced Date Picker -->
-      <div class="mb-3">
-        <label class="form-label">
-          <i class="fa-solid fa-calendar-days me-2"></i>
-          วันที่ทำรายการ
-        </label>
-        <div class="date-picker-wrapper">
-          <div class="enhanced-date-picker" @click="toggleDatePicker">
-            <div class="date-display">
-              <div class="date-icon">
-                <i class="fa-solid fa-calendar-alt"></i>
+    <div class="single-transaction-form">
+      <h2 class="text-center">{{ isEditing ? 'แก้ไขรายการ' : 'เพิ่มรายการเดียว' }}</h2>
+      <form @submit.prevent="submitTransaction">
+        <!-- Enhanced Date Picker -->
+        <div class="mb-3">
+          <label class="form-label">
+            <i class="fa-solid fa-calendar-days me-2"></i>
+            วันที่ทำรายการ
+          </label>
+          <div class="date-picker-wrapper">
+            <div class="enhanced-date-picker" @click="toggleDatePicker">
+              <div class="date-display">
+                <div class="date-icon">
+                  <i class="fa-solid fa-calendar-alt"></i>
+                </div>
+                <div class="date-text">
+                  <div class="selected-date">{{ formatDisplayDate(transactionDate) }}</div>
+                  <div class="date-subtitle">คลิกเพื่อเปลี่ยนแปลง</div>
+                </div>
               </div>
-              <div class="date-text">
-                <div class="selected-date">{{ formatDisplayDate(transactionDate) }}</div>
-                <div class="date-subtitle">คลิกเพื่อเปลี่ยนแปลง</div>
-              </div>
+              <i class="fa-solid fa-chevron-down dropdown-arrow" :class="{ 'rotated': showDatePicker }"></i>
             </div>
-            <i class="fa-solid fa-chevron-down dropdown-arrow" :class="{ 'rotated': showDatePicker }"></i>
-          </div>
-          
-          <!-- Hidden native date input for fallback -->
-          <input
-            type="date"
-            v-model="transactionDate"
-            class="native-date-input d-none"
-            :max="maxDate"
-            @change="onDateChange"
-            ref="nativeDateInput"
-          />
-          
-          <!-- Enhanced Calendar Dropdown -->
-          <transition name="calendar-slide">
-            <div v-if="showDatePicker" class="enhanced-calendar-dropdown" @click.self="closeDatePicker">
-              <div class="calendar-header">
-                <button type="button" class="nav-button" @click="previousMonth">
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <div class="period-display">
-                  <div class="month-name">{{ thaiMonths[currentMonth] }}</div>
-                  <div class="year-name">{{ currentYear + 543 }}</div>
+
+            <!-- Hidden native date input for fallback -->
+            <input type="date" v-model="transactionDate" class="native-date-input d-none" :max="maxDate"
+              @change="onDateChange" ref="nativeDateInput" />
+
+            <!-- Enhanced Calendar Dropdown -->
+            <transition name="calendar-slide">
+              <div v-if="showDatePicker" class="enhanced-calendar-dropdown" @click.self="closeDatePicker">
+                <div class="calendar-header">
+                  <button type="button" class="nav-button" @click="previousMonth">
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <div class="period-display">
+                    <div class="month-name">{{ thaiMonths[currentMonth] }}</div>
+                    <div class="year-name">{{ currentYear + 543 }}</div>
+                  </div>
+                  <button type="button" class="nav-button" @click="nextMonth">
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                  <button type="button" class="close-calendar-btn d-md-none" @click="closeDatePicker">
+                    <i class="fa-solid fa-times"></i>
+                  </button>
                 </div>
-                <button type="button" class="nav-button" @click="nextMonth">
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-                <button type="button" class="close-calendar-btn d-md-none" @click="closeDatePicker">
-                  <i class="fa-solid fa-times"></i>
-                </button>
-              </div>
-              
-              <div class="calendar-body">
-                <div class="weekdays-row">
-                  <div v-for="day in weekDays" :key="day" class="weekday-cell">{{ day }}</div>
-                </div>
-                <div class="days-grid">
-                  <div 
-                    v-for="(day, index) in calendarDays" 
-                    :key="`${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}-${index}`"
-                    class="day-cell"
-                    :class="{
-                      'other-month': !day.currentMonth,
-                      'selected': isSelectedDay(day.date),
-                      'today': isToday(day.date),
-                      'disabled': day.date > new Date(),
-                      'weekend': isWeekend(day.date)
-                    }"
-                    @click="selectDate(day.date)"
-                  >
-                    <div class="day-content">
-                      <span class="day-number">{{ day.date.getDate() }}</span>
-                      <div v-if="isToday(day.date)" class="today-indicator"></div>
+
+                <div class="calendar-body">
+                  <div class="weekdays-row">
+                    <div v-for="day in weekDays" :key="day" class="weekday-cell">{{ day }}</div>
+                  </div>
+                  <div class="days-grid">
+                    <div v-for="(day, index) in calendarDays"
+                      :key="`${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}-${index}`"
+                      class="day-cell" :class="{
+                        'other-month': !day.currentMonth,
+                        'selected': isSelectedDay(day.date),
+                        'today': isToday(day.date),
+                        'disabled': day.date > new Date(),
+                        'weekend': isWeekend(day.date)
+                      }" @click="selectDate(day.date)">
+                      <div class="day-content">
+                        <span class="day-number">{{ day.date.getDate() }}</span>
+                        <div v-if="isToday(day.date)" class="today-indicator"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <div class="calendar-footer">
+                  <button type="button" class="quick-action-btn today-btn" @click="selectToday">
+                    <i class="fa-solid fa-calendar-day me-2"></i>
+                    วันนี้
+                  </button>
+                  <button type="button" class="quick-action-btn yesterday-btn" @click="selectYesterday">
+                    <i class="fa-solid fa-calendar-minus me-2"></i>
+                    เมื่อวาน
+                  </button>
+                </div>
               </div>
-              
-              <div class="calendar-footer">
-                <button type="button" class="quick-action-btn today-btn" @click="selectToday">
-                  <i class="fa-solid fa-calendar-day me-2"></i>
-                  วันนี้
-                </button>
-                <button type="button" class="quick-action-btn yesterday-btn" @click="selectYesterday">
-                  <i class="fa-solid fa-calendar-minus me-2"></i>
-                  เมื่อวาน
-                </button>
-              </div>
-            </div>
-          </transition>
+            </transition>
+          </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">
-          <i class="fa-solid fa-tag me-2"></i>
-          ประเภทของรายการ
-        </label>
-        <select v-model="transactionType" class="form-select" required>
-          <option value="" disabled>เลือกประเภท</option>
-          <option value="income">รายรับ</option>
-          <option value="expense">รายจ่าย</option>
-        </select>
-      </div>
+        <div class="mb-3">
+          <label class="form-label">
+            <i class="fa-solid fa-tag me-2"></i>
+            ประเภทของรายการ
+          </label>
+          <select v-model="transactionType" class="form-select" required>
+            <option value="" disabled>เลือกประเภท</option>
+            <option value="income">รายรับ</option>
+            <option value="expense">รายจ่าย</option>
+          </select>
+        </div>
 
-      <!-- เพิ่มส่วนเลือกหมวดหมู่ -->
-      <div v-if="transactionType" class="mb-3">
-        <label class="form-label">
-          <i class="fa-solid fa-layer-group me-2"></i>
-          หมวดหมู่
-        </label>
-        <select v-model="selectedPocketId" class="form-select" required>
-          <option value="" disabled>เลือกหมวดหมู่</option>
-          <template v-if="transactionType === 'income'">
-            <option v-for="pocket in incomePockets" :key="pocket._id" :value="pocket._id">
-              {{ pocket.name }}
-            </option>
-          </template>
-          <template v-else>
-            <option v-for="pocket in expensePockets" :key="pocket._id" :value="pocket._id">
-              {{ pocket.name }}
-            </option>
-          </template>
-        </select>
-      </div>
+        <!-- เพิ่มส่วนเลือกหมวดหมู่ -->
+        <div v-if="transactionType" class="mb-3">
+          <label class="form-label">
+            <i class="fa-solid fa-layer-group me-2"></i>
+            หมวดหมู่
+          </label>
+          <select v-model="selectedPocketId" class="form-select" required>
+            <option value="" disabled>เลือกหมวดหมู่</option>
+            <template v-if="transactionType === 'income'">
+              <option v-for="pocket in incomePockets" :key="pocket._id" :value="pocket._id">
+                {{ pocket.name }}
+              </option>
+            </template>
+            <template v-else>
+              <option v-for="pocket in expensePockets" :key="pocket._id" :value="pocket._id">
+                {{ pocket.name }}
+              </option>
+            </template>
+          </select>
+        </div>
 
-      <div class="mb-3">
-        <label for="amount" class="form-label">
-          <i class="fa-solid fa-coins me-2"></i>
-          จำนวนเงิน
-        </label>
-        <input type="number" v-model="amount" class="form-control" required placeholder="0.00" />
-      </div>
+        <div class="mb-3">
+          <label for="amount" class="form-label">
+            <i class="fa-solid fa-coins me-2"></i>
+            จำนวนเงิน
+          </label>
+          <input type="number" v-model="amount" class="form-control" required placeholder="0.00" />
+        </div>
 
-      <div class="mb-3">
-        <label for="description" class="form-label">
-          <i class="fa-solid fa-note-sticky me-2"></i>
-          บันทึกช่วยจำ
-        </label>
-        <input type="text" v-model="description" class="form-control" required placeholder="รายละเอียดของรายการ" />
-      </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">
+            <i class="fa-solid fa-note-sticky me-2"></i>
+            บันทึกช่วยจำ
+          </label>
+          <input type="text" v-model="description" class="form-control" required placeholder="รายละเอียดของรายการ" />
+        </div>
 
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary flex-grow-1" :disabled="!isFormValid">
-          {{ isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ' }}
-        </button>
-        <button type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
-          ยกเลิก
-        </button>
-      </div>
-    </form>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1" :disabled="!isFormValid">
+            {{ isEditing ? 'บันทึกการแก้ไข' : 'เพิ่มรายการเดียว' }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
+            ยกเลิก
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -192,12 +150,8 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import Swal from 'sweetalert2'
 import { useStore } from 'vuex'
-import MultipleTransactionForm from './MultipleTransactionForm.vue'
 
 export default {
-  components: {
-    MultipleTransactionForm
-  },
   props: {
     selectedDate: {
       type: Date,
@@ -213,9 +167,6 @@ export default {
     const store = useStore()
     const nativeDateInput = ref(null)
 
-    // Mode selection
-    const multipleMode = ref(false)
-
     // Date picker states
     const showDatePicker = ref(false)
     const currentMonth = ref(new Date().getMonth())
@@ -223,7 +174,7 @@ export default {
 
     // Thai month names
     const thaiMonths = [
-      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน',
       'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม',
       'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
     ]
@@ -257,7 +208,7 @@ export default {
     // Date picker methods
     const toggleDatePicker = () => {
       showDatePicker.value = !showDatePicker.value
-      
+
       // Prevent body scroll on mobile when modal is open
       if (showDatePicker.value && window.innerWidth <= 768) {
         if (typeof document !== 'undefined' && document.body) {
@@ -281,16 +232,16 @@ export default {
     const adjustCalendarPosition = () => {
       const calendarEl = document.querySelector('.enhanced-calendar-dropdown')
       const pickerEl = document.querySelector('.enhanced-date-picker')
-      
+
       if (calendarEl && pickerEl) {
         const pickerRect = pickerEl.getBoundingClientRect()
         const calendarRect = calendarEl.getBoundingClientRect()
         const viewportWidth = window.innerWidth
-        
+
         // รีเซ็ต positioning
         calendarEl.style.left = '0'
         calendarEl.style.right = 'auto'
-        
+
         // ตรวจสอบว่าเกินขอบขวาหรือไม่
         if (pickerRect.left + calendarRect.width > viewportWidth - 20) {
           calendarEl.style.left = 'auto'
@@ -367,12 +318,12 @@ export default {
       if (event.target.closest('.enhanced-calendar-dropdown')) {
         return
       }
-      
+
       // Don't close if clicking on the date picker trigger
       if (event.target.closest('.enhanced-date-picker')) {
         return
       }
-      
+
       // Close the dropdown
       closeDatePicker()
     }
@@ -387,7 +338,7 @@ export default {
     onMounted(() => {
       document.addEventListener('click', handleClickOutside)
       document.addEventListener('keydown', handleEscapeKey)
-      
+
       // Set current month/year based on selected date
       const selectedDate = new Date(transactionDate.value)
       currentMonth.value = selectedDate.getMonth()
@@ -539,7 +490,7 @@ export default {
 
         // Emit transaction to parent component
         emit('transaction-added', transaction)
-        
+
         resetForm()
       } catch (error) {
         console.error('Error submitting transaction:', error)
@@ -553,17 +504,7 @@ export default {
       }
     }
 
-    // Handle multiple transactions added
-    const onTransactionsAdded = (transactions) => {
-      emit('transaction-added', transactions)
-      multipleMode.value = false
-    }
-
     return {
-      // Mode selection
-      multipleMode,
-      onTransactionsAdded,
-      
       // Form data
       transactionType,
       selectedPocketId,
@@ -575,7 +516,7 @@ export default {
       isFormValid,
       isEditing,
       maxDate,
-      
+
       // Date picker
       showDatePicker,
       currentMonth,
@@ -584,7 +525,7 @@ export default {
       weekDays,
       calendarDays,
       nativeDateInput,
-      
+
       // Methods
       submitTransaction,
       formatDisplayDate,
@@ -614,45 +555,6 @@ export default {
   padding: 2rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid #f1f5f9;
-}
-
-/* Mode Selection Styles */
-.mode-selection {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e1e5e9;
-  padding-bottom: 1.5rem;
-}
-
-.mode-tabs {
-  display: flex;
-  gap: 0.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 0.25rem;
-}
-
-.mode-tab {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  color: var(--text-light);
-  cursor: pointer;
-}
-
-.mode-tab.active {
-  background: var(--primary-color);
-  color: white;
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
-}
-
-.mode-tab:hover:not(.active) {
-  background: #e2e8f0;
-  color: var(--text-color);
 }
 
 .transaction-form h2 {
@@ -1120,72 +1022,72 @@ export default {
     box-sizing: border-box !important;
     contain: layout style !important;
   }
-  
+
   /* ปรับตำแหน่งถ้าเกินขอบขวา */
   .date-picker-wrapper {
     position: relative;
   }
-  
+
   .date-picker-wrapper .enhanced-calendar-dropdown {
     left: auto;
     right: 0;
   }
-  
+
   .enhanced-calendar-dropdown::before {
     display: none;
   }
-  
+
   .close-calendar-btn {
     display: none !important;
   }
-  
+
   .calendar-header {
     padding: 1rem 1.25rem !important;
   }
-  
+
   .calendar-body {
     padding: 1.25rem !important;
   }
-  
+
   .weekday-cell {
     font-size: 0.688rem !important;
     padding: 0.375rem 0 !important;
   }
-  
+
   .days-grid {
     gap: 0.375rem !important;
   }
-  
+
   .day-cell {
     min-height: 36px !important;
     font-size: 0.813rem !important;
     border-radius: 6px !important;
   }
-  
+
   .day-number {
     font-size: 0.813rem !important;
   }
-  
+
   .nav-button {
     width: 32px !important;
     height: 32px !important;
     font-size: 0.875rem !important;
   }
-  
+
   .month-name {
     font-size: 0.95rem !important;
   }
-  
+
   .year-name {
     font-size: 0.688rem !important;
   }
-  
+
   .quick-action-btn {
     padding: 0.5rem 0.75rem !important;
     font-size: 0.75rem !important;
     min-height: auto !important;
   }
-  
+
   .calendar-footer {
     padding: 0.875rem 1.25rem !important;
     gap: 0.75rem !important;
@@ -1214,7 +1116,7 @@ export default {
     z-index: 99999 !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
   }
-  
+
   /* Backdrop overlay */
   .enhanced-calendar-dropdown::before {
     content: '';
@@ -1229,7 +1131,7 @@ export default {
     backdrop-filter: blur(2px);
     pointer-events: auto;
   }
-  
+
   .enhanced-date-picker {
     padding: 0.75rem 1rem;
     border-radius: 10px;
@@ -1237,27 +1139,27 @@ export default {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-  
+
   .date-icon {
     width: 32px;
     height: 32px;
     font-size: 0.9rem;
     border-radius: 8px;
   }
-  
+
   .selected-date {
     font-size: 0.9rem;
   }
-  
+
   .date-subtitle {
     font-size: 0.688rem;
   }
-  
+
   .calendar-header {
     padding: 1rem 2.5rem 1rem 1rem;
     border-radius: 12px 12px 0 0;
   }
-  
+
   .close-calendar-btn {
     display: flex !important;
     position: absolute;
@@ -1268,34 +1170,34 @@ export default {
     z-index: 10;
     font-size: 0.75rem;
   }
-  
+
   .nav-button {
     width: 32px;
     height: 32px;
     font-size: 0.875rem;
   }
-  
+
   .month-name {
     font-size: 0.95rem;
   }
-  
+
   .year-name {
     font-size: 0.75rem;
   }
-  
+
   .calendar-body {
     padding: 1rem;
   }
-  
+
   .weekday-cell {
     font-size: 0.688rem;
     padding: 0.375rem 0;
   }
-  
+
   .days-grid {
     gap: 0.375rem;
   }
-  
+
   .day-cell {
     min-height: 36px;
     font-size: 0.75rem;
@@ -1305,11 +1207,11 @@ export default {
     touch-action: manipulation;
     user-select: none;
   }
-  
+
   .day-number {
     font-size: 0.75rem !important;
   }
-  
+
   .quick-action-btn {
     flex: 1;
     justify-content: center;
@@ -1319,7 +1221,7 @@ export default {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-  
+
   .calendar-footer {
     padding: 0.75rem 1rem;
     gap: 0.5rem;

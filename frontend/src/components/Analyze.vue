@@ -19,7 +19,7 @@
               <div class="compare-modal-content">
                 <div class="modal-header d-flex justify-content-between align-items-center">
                   <h4 class="mb-0">เปรียบเทียบรายจ่ายระหว่างเดือน</h4>
-                  <button type="button" class="btn-close" @click="showCompareModal = false"></button>
+                  <button type="button" class="btn btn-danger" @click="showCompareModal = false">x</button>
                 </div>
                 <div class="modal-body">
                   <div class="row g-3 mb-3">
@@ -96,7 +96,7 @@
           </div>
         </div>
 
-        <!-- Export/Import Buttons -->
+        <!-- Buttons -->
         <div class="action-buttons d-flex gap-2">
           <button class="btn btn-outline-secondary" type="button" @click="showCompareModal = true">
             <i class="fa-solid fa-chart-column me-2"></i>
@@ -158,7 +158,7 @@
               </div>
               <div>
                 <h6 class="mb-1">รายรับทั้งหมด</h6>
-                <h3 class="mb-0">{{ formatAmount(totalIncome) }} ฿</h3>
+                <h3 class="mb-0 text-success">{{ formatAmount(totalIncome) }} ฿</h3>
               </div>
             </div>
           </div>
@@ -174,7 +174,7 @@
               </div>
               <div>
                 <h6 class="mb-1">รายจ่ายทั้งหมด</h6>
-                <h3 class="mb-0">{{ formatAmount(totalExpenses) }} ฿</h3>
+                <h3 class="mb-0 text-danger">{{ formatAmount(totalExpenses) }} ฿</h3>
               </div>
             </div>
           </div>
@@ -190,7 +190,7 @@
               </div>
               <div>
                 <h6 class="mb-1">คงเหลือ</h6>
-                <h3 class="mb-0">{{ formatAmount(balance) }} ฿</h3>
+                <h3 class="mb-0 text-primary">{{ formatAmount(balance) }} ฿</h3>
               </div>
             </div>
           </div>
@@ -783,7 +783,7 @@ export default {
 
 <style scoped>
 .section-header {
-  background: var(--white);
+  background: white;
   border-radius: var(--border-radius);
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -791,7 +791,7 @@ export default {
 
 .period-selector .input-group {
   min-width: 160px;
-  background: var(--white);
+  background: white;
   border-radius: var(--border-radius);
 }
 
@@ -813,7 +813,7 @@ export default {
 
 /* Summary Cards Styling */
 .summary-card {
-  background: var(--white);
+  background: white;
   border-radius: var(--border-radius);
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -827,6 +827,7 @@ export default {
 }
 
 .summary-card .card-body {
+  color: white;
   padding: 1rem;
 }
 
@@ -938,7 +939,7 @@ export default {
 }
 
 .compare-modal-content {
-  background: var(--white);
+  background: white;
   border-radius: 1rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   max-width: 500px;
@@ -965,7 +966,7 @@ export default {
 }
 
 .compare-result .card {
-  background: #f9f9f9;
+  background: white;
   border-radius: 0.75rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }

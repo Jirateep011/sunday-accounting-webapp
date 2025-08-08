@@ -109,7 +109,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="entry in sortedData" 
+                  <tr v-for="entry in paginatedIncome" 
                       :key="entry._id"
                       :class="['transaction-row', { 'selected': isTransactionSelected(entry._id) }]"
                       @click="handleRowClick(entry)">
@@ -139,7 +139,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="sortedData.length === 0">
+                  <tr v-if="paginatedIncome.length === 0">
                     <td colspan="5" class="text-center py-4">
                       <div class="empty-state">
                         <i class="bi bi-inbox text-muted"></i>
@@ -155,7 +155,7 @@
             <div class="pagination-wrapper p-3 mt-auto border-top">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <div class="text-muted">
-                  แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ sortedIncomeEntries.length }} รายการ
+                  แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ filteredEntries.length }} รายการ
                 </div>
                 <nav v-if="totalPages > 1">
                   <ul class="pagination pagination-sm mb-0">
@@ -218,7 +218,7 @@ export default {
     })
 
     const totalPages = computed(() => {
-      return Math.ceil(sortedIncomeEntries.value.length / itemsPerPage.value)
+      return Math.ceil(filteredEntries.value.length / itemsPerPage.value)
     })
 
     const startIndex = computed(() => {
@@ -226,11 +226,11 @@ export default {
     })
 
     const endIndex = computed(() => {
-      return Math.min(startIndex.value + itemsPerPage.value, sortedIncomeEntries.value.length)
+      return Math.min(startIndex.value + itemsPerPage.value, filteredEntries.value.length)
     })
 
     const paginatedIncome = computed(() => {
-      return sortedIncomeEntries.value.slice(startIndex.value, endIndex.value)
+      return sortedData.value.slice(startIndex.value, endIndex.value)
     })
 
     const displayedPages = computed(() => {
@@ -301,6 +301,11 @@ export default {
 
     // Watch for itemsPerPage changes
     watch(itemsPerPage, () => {
+      currentPage.value = 1
+    })
+
+    // Watch for selectedDate changes to reset pagination
+    watch(selectedDate, () => {
       currentPage.value = 1
     })
 

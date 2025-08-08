@@ -106,7 +106,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="entry in filteredAndPaginatedExpenses" 
+                  <tr v-for="entry in paginatedData" 
                       :key="entry._id"
                       :class="['transaction-row', { 'selected': isTransactionSelected(entry._id) }]"
                       @click="handleRowClick(entry)">
@@ -136,7 +136,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="filteredAndPaginatedExpenses.length === 0">
+                  <tr v-if="paginatedData.length === 0">
                     <td colspan="5" class="text-center py-4">
                       <div class="empty-state">
                         <i class="bi bi-inbox text-muted"></i>
@@ -152,7 +152,7 @@
             <div class="pagination-wrapper p-3 mt-auto border-top"> <!-- เพิ่ม class และ style ใหม่ -->
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <div class="text-muted">
-                  แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ sortedExpenses.length }} รายการ
+                  แสดง {{ startIndex + 1 }} ถึง {{ endIndex }} จาก {{ filteredExpenses.length }} รายการ
                 </div>
                 <nav v-if="totalPages > 1">
                   <ul class="pagination pagination-sm mb-0"> <!-- เพิ่ม mb-0 -->
@@ -258,7 +258,7 @@ export default {
     }
 
     const totalPages = computed(() => {
-      return Math.ceil(sortedExpenses.value.length / itemsPerPage.value)
+      return Math.ceil(filteredExpenses.value.length / itemsPerPage.value)
     })
 
     const startIndex = computed(() => {
@@ -266,7 +266,7 @@ export default {
     })
 
     const endIndex = computed(() => {
-      return Math.min(startIndex.value + itemsPerPage.value, sortedExpenses.value.length)
+      return Math.min(startIndex.value + itemsPerPage.value, filteredExpenses.value.length)
     })
 
     const displayedPages = computed(() => {
@@ -390,7 +390,7 @@ export default {
     }
 
     const sortedData = computed(() => {
-      const data = [...filteredExpenses.value] // or whatever your data source is
+      const data = [...filteredExpenses.value] // Use filtered expenses instead
       
       return data.sort((a, b) => {
         let compareResult = 0
@@ -474,6 +474,7 @@ export default {
       selectedDate,
       filteredExpenses,
       filteredAndPaginatedExpenses,
+      paginatedData,
       showAddForm,
       handleTransactionAdded,
       selectedDateTotal,
@@ -488,6 +489,7 @@ export default {
       sort,
       getSortIcon,
       sortConfig,
+      sortedData,
       isSelectMode,
       selectedTransactions,
       toggleSelectMode,
